@@ -14,6 +14,7 @@
 	.export	printChar
 	.export	printBool
 	.export	printDouble
+        .export GetChar
 	.export	MemoryZero
 	.export	MemoryCopy
 	.export	getCatchStack
@@ -813,6 +814,28 @@ printDouble:
 		ret				! Return
 
 
+! 
+! =====================  GetChar  =====================
+! 
+! external GetChar returns char
+!
+! This function reads an input character and returns that input character.
+! 
+SERIAL_STAT	=	0x00ffff00
+SERIAL_DATA	=	0x00ffff04
+GetChar:
+	set	SERIAL_STAT,r3	! Initialize ptr to SERIAL_STAT word
+	set	SERIAL_DATA,r4	! Initialize ptr to SERIAL_DATA word
+loop:
+wait1:
+	load	[r3],r5		!     r5 := serial status word
+	btst	0x00000001,r5   !     if status[charAvail] == 0 then
+	be	wait1		!     .    goto WAIT1
+	load	[r4],r2 	! read char
+	sll	r2,24,r2
+	store	r2,[r15+4]
+        !debug
+	ret
 
 ! 
 ! =====================  _heapInitialize  =====================

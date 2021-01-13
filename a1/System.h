@@ -21,6 +21,7 @@ header System
     external printChar (c: char)         -- prints non-printables as, e.g., \x05
     external printBool (b: bool)         -- prints "TRUE" or "FALSE"
     external printDouble (d: double)
+    external GetChar () returns char
     nl ()                                -- Short for printChar ('\n')
 
   -- The following routines are implemented in assembly in the Runtime.s file.

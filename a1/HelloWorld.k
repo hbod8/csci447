@@ -3,8 +3,12 @@ code Hello
   -- This is the "hello world" program, for use in Project 1.
 
   function main ()
+      var c: char
       print ("Hello, world...\n")
       --foo (10)
+      c = GetChar()
+      printChar(c)
+      debug
     endFunction
 
   function foo (x: int)
