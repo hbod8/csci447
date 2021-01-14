@@ -6,9 +6,10 @@ code Hello
       var c: char
       print ("Hello, world...\n")
       --foo (10)
-      c = GetChar()
-      printChar(c)
-      debug
+      while (true)
+        c = GetChar()
+        printChar(c)
+      endWhile
     endFunction
 
   function foo (x: int)
