@@ -95,25 +95,59 @@ code Synch
       ----------  Mutex . Init  ----------
 
       method Init ()
-          FatalError ("Unimplemented method")
+          waitingThreads = new List [Thread]
+          heldBy = null
         endMethod
 
       ----------  Mutex . Lock  ----------
 
       method Lock ()
-          FatalError ("Unimplemented method")
+          var
+            oldIntStat: int
+          oldIntStat = SetInterruptsTo (DISABLED)
+          -- print("locking\n")
+          if heldBy == currentThread
+            FatalError("oof")
+          elseIf heldBy != null
+            -- print("locking: wait\n")
+            waitingThreads.AddToEnd (currentThread)
+            currentThread.Sleep ()
+          else
+            -- print("locking: held\n")
+            heldBy = currentThread
+          endIf
+          -- print("lock: end\n")
+          oldIntStat = SetInterruptsTo (oldIntStat)
         endMethod
 
       ----------  Mutex . Unlock  ----------
 
       method Unlock ()
-          FatalError ("Unimplemented method")
+          var
+            oldIntStat: int
+            t: ptr to Thread
+          oldIntStat = SetInterruptsTo (DISABLED)
+          -- print("unlock\n")
+          if !(waitingThreads.IsEmpty())
+            -- print("unlock: next\n")
+            t = waitingThreads.Remove()
+            t.status = READY
+            readyList.AddToEnd (t)
+            heldBy = t
+          else
+            -- print("unlock: ul\n")
+            heldBy = null
+          endIf
+          -- print("unlock: end\n")
+          oldIntStat = SetInterruptsTo (oldIntStat)
         endMethod
 
       ----------  Mutex . IsHeldByCurrentThread  ----------
 
       method IsHeldByCurrentThread () returns bool
-          FatalError ("Unimplemented method")
+          if heldBy == currentThread
+            return true
+          endIf
           return false
         endMethod
 
