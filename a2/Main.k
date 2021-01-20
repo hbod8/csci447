@@ -25,8 +25,8 @@ code Main
       -- SimpleThreadExample ()
       -- MoreThreadExamples ()
       -- TestMutex ()
-      ProducerConsumer ()
-      -- DiningPhilosophers ()
+      -- ProducerConsumer ()
+      DiningPhilosophers ()
 
       ThreadFinish ()
 
@@ -515,8 +515,11 @@ code Main
     superclass Object
     fields
       status: array [5] of int             -- For each philosopher: HUNGRY, EATING, or THINKING
+      mut: Mutex
+      cond: Condition
     methods
       Init ()
+      Test (p: int)
       PickupForks (p: int)
       PutDownForks (p: int)
       PrintAllStatus ()
@@ -527,16 +530,42 @@ code Main
     method Init ()
       -- Initialize so that all philosophers are THINKING.
       -- ...unimplemented...
+      status = new array of int { 5 of THINKING }
+      mut = new Mutex
+      mut.Init()
+      cond = new Condition
+      cond.Init()
+      endMethod
+
+    method Test (p: int)
+      if status[(p + 4) % 5] != EATING && status[p] == HUNGRY && status[(p + 1) % 5] != EATING
+        status[p] = EATING
+        self.PrintAllStatus()
+        cond.Signal(&mut)
+      endIf
       endMethod
 
     method PickupForks (p: int)
       -- This method is called when philosopher 'p' is wants to eat.
       -- ...unimplemented...
+      mut.Lock()
+      -- print("I'm gonna try and eat\n")
+      status[p] = HUNGRY
+      self.Test(p)
+      if status[p] != EATING
+        cond.Wait(&mut)
+      endIf
+      mut.Unlock()
       endMethod
 
     method PutDownForks (p: int)
+      mut.Lock()
       -- This method is called when the philosopher 'p' is done eating.
       -- ...unimplemented...
+      status[p] = THINKING
+      self.Test((p + 4) % 5)
+      self.Test((p + 1) % 5)
+      mut.Unlock()
       endMethod
 
     method PrintAllStatus ()
