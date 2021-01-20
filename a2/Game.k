@@ -54,13 +54,19 @@ code Game
   endFunction
 
   function ThreadBody(numberOfDice: int)
-    
+    var
+      i: int
+    for i = 1 to 5 by 1
+      monitor.Request(numberOfDice)
+      monitor.Return(numberOfDice)
+    endFor
   endFunction
 
   class GameParlorMonitor
     superclass Object
     fields
       dice: int
+      groupq: List [Thread]
       dmutex: Mutex
       donecond: Condition
     methods
@@ -69,5 +75,50 @@ code Game
       Return(numberOfDice: int)
   endClass
 
+  behavior GameParlorMonitor
 
+    method Init()
+      dice = 8
+      groupq = new List [Thread]
+      dmutex = new Mutex
+      dmutex.Init()
+      donecond = new Condition
+      donecond.Init()
+    endMethod
+
+    method Request(numberOfDice: int)
+      var
+        qh: ptr to Thread
+      dmutex.Lock()
+      print(currentThread.name)
+      print(" requests ")
+      printInt(numberOfDice)
+      print("\n")
+      if !groupq.IsEmpty() || numberOfDice > dice
+        groupq.AddToEnd(currentThread)
+        while groupq.first != currentThread || numberOfDice > dice
+          donecond.Wait(&dmutex)
+        endWhile
+        qh = groupq.Remove()
+      endIf
+      dice = dice - numberOfDice
+      print(currentThread.name)
+      print(" proceeds with ")
+      printInt(numberOfDice)
+      print("\n")
+      dmutex.Unlock()
+    endMethod
+
+    method Return(numberOfDice: int)
+      dmutex.Lock()
+      dice = dice + numberOfDice
+      print(currentThread.name)
+      print(" releases and adds back ")
+      printInt(numberOfDice)
+      print("\n")
+      donecond.Broadcast(&dmutex)
+      dmutex.Unlock()
+    endMethod
+
+  endBehavior
 endCode
