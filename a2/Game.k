@@ -58,7 +58,9 @@ code Game
       i: int
     for i = 1 to 5 by 1
       monitor.Request(numberOfDice)
+      currentThread.Yield()
       monitor.Return(numberOfDice)
+      currentThread.Yield()
     endFor
   endFunction
 
