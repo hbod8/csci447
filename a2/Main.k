@@ -22,10 +22,10 @@ code Main
 
       -----  Uncomment any one of the following to perform the desired test  -----
 
-      SimpleThreadExample ()
+      -- SimpleThreadExample ()
       -- MoreThreadExamples ()
       -- TestMutex ()
-      -- ProducerConsumer ()
+      ProducerConsumer ()
       -- DiningPhilosophers ()
 
       ThreadFinish ()
@@ -310,8 +310,15 @@ code Main
     bufferNextIn: int = 0
     bufferNextOut: int = 0
     thArray: array [8] of Thread = new array of Thread { 8 of new Thread }
+    bufMutex: Mutex = new Mutex
+    semCanConsume: Semaphore = new Semaphore
+    semCanProduce: Semaphore = new Semaphore
 
   function ProducerConsumer ()
+
+      bufMutex.Init()
+      semCanConsume.Init(0)
+      semCanProduce.Init(BUFFER_SIZE)
 
       print ("     ")
 
@@ -348,16 +355,20 @@ code Main
         c: char = intToChar ('A' + myId - 1)
       for i = 1 to 5
         -- Perform synchroniztion...
+        semCanProduce.Down()
 
         -- Add c to the buffer
+        bufMutex.Lock()
         buffer [bufferNextIn] = c
         bufferNextIn = (bufferNextIn + 1) % BUFFER_SIZE
         bufferSize = bufferSize + 1
+        bufMutex.Unlock()
 
         -- Print a line showing the state
         PrintBuffer (c)
 
         -- Perform synchronization...
+        semCanConsume.Up()
 
       endFor
     endFunction
@@ -367,16 +378,20 @@ code Main
         c: char
       while true
         -- Perform synchroniztion...
+        semCanConsume.Down()
 
         -- Remove next character from the buffer
+        bufMutex.Lock()
         c = buffer [bufferNextOut]
         bufferNextOut = (bufferNextOut + 1) % BUFFER_SIZE
         bufferSize = bufferSize - 1
+        bufMutex.Unlock()
 
         -- Print a line showing the state
         PrintBuffer (c)
 
         -- Perform synchronization...
+        semCanProduce.Up()
 
       endWhile
     endFunction
