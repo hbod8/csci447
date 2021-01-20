@@ -1,0 +1,60 @@
+Script started on 2021-01-20 04:17:56-08:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="198" LINES="13"]
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a2[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a2[00m$ blitz -g os
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Example Thread-based Programs...
+Initializing Thread Scheduler...
+Plato
+    Sartre
+        Kant
+            Nietzsche
+                Aristotle
+.   .   .   .   .   
+E   .   .   .   .   
+E   .   .   .   .   
+E       E   .   .   
+.       E       E   
+.   E   .       E   
+    .   E       E   
+E       E   .   .   
+E       .   E   .   
+.   E       E       
+.   E       .   E   
+.   .   E   .   E   
+E       E       .   
+E       .   E   .   
+.   E       E       
+    E       .   E   
+    .   E       E   
+E   .   E       .   
+E       .   E       
+.   E       E       
+    E       .   E   
+    .   E   .   E   
+E       E       .   
+E       .   E       
+.   E       E       
+.   E       .   E   
+    .   E       E   
+E   .   E       .   
+E       .   E       
+.   E       E       
+.   E       .   E   
+.   .   E       E   
+.   E   .       .   
+.   E   .   E   .   
+.   .   .   .   E   
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+000EC8: 09000000       ret     
+Number of Disk Reads    = 0
+Number of Disk Writes   = 0
+Instructions Executed   = 374060
+Time Spent Sleeping     = 0
+    Total Elapsed Time  = 374060
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a2[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a2[00m$ exit
+exit
+
+Script done on 2021-01-20 04:18:05-08:00 [COMMAND_EXIT_CODE="0"]

@@ -1,0 +1,70 @@
+Script started on 2021-01-20 04:16:56-08:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="198" LINES="13"]
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a2[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a2[00m$ blitx[Kz -g os
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Example Thread-based Programs...
+Initializing Thread Scheduler...
+        Producer-A         A
+A       Producer-B             B
+AB      Producer-B             B
+ABB     Producer-B             B
+ABBB    Producer-C                 C
+ABBBC   Consumer-1                               |      A
+BBBC    Consumer-2                               |          B
+BBC     Consumer-3                               |              B
+BC      Producer-C                 C
+BCC     Producer-D                     D
+BCCD    Consumer-1                               |      B
+CCDE    Producer-E                         E
+CCDE    Consumer-2                               |          C
+CDE     Consumer-3                               |              C
+DE      Consumer-1                               |      D
+E       Producer-A         A
+EA      Consumer-2                               |          E
+A       Producer-B             B
+AB      Producer-C                 C
+ABC     Producer-D                     D
+ABCD    Consumer-3                               |              A
+BCD     Producer-E                         E
+BCDE    Consumer-1                               |      B
+CDE     Consumer-2                               |          C
+DE      Consumer-3                               |              D
+E       Producer-A         A
+EA      Consumer-1                               |      E
+A       Producer-B             B
+AB      Producer-C                 C
+ABC     Producer-D                     D
+ABCD    Consumer-2                               |          A
+BCD     Consumer-3                               |              B
+CDE     Producer-E                         E
+CDE     Consumer-1                               |      C
+DE      Consumer-2                               |          D
+E       Producer-A         A
+EA      Producer-C                 C
+EAC     Consumer-3                               |              E
+AC      Producer-D                     D
+ACD     Producer-E                         E
+ACDE    Consumer-1                               |      A
+CDE     Producer-A         A
+DEA     Consumer-2                               |          C
+DEA     Consumer-3                               |              D
+EA      Consumer-1                               |      E
+A       Consumer-3                               |              A
+D       Producer-D                     D
+D       Producer-E                         E
+DE      Consumer-2                               |          D
+E       Consumer-1                               |      E
+     
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+000EC8: 09000000       ret     
+Number of Disk Reads    = 0
+Number of Disk Writes   = 0
+Instructions Executed   = 244422
+Time Spent Sleeping     = 0
+    Total Elapsed Time  = 244422
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a2[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a2[00m$ exit
+exit
+
+Script done on 2021-01-20 04:17:09-08:00 [COMMAND_EXIT_CODE="0"]
