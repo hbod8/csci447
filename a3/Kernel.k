@@ -697,12 +697,27 @@ code Kernel
       ----------  ThreadManager . Init  ----------
 
       method Init ()
+          var
+            i: int
         --
         -- This method is called once at kernel startup time to initialize
         -- the one and only "ThreadManager" object.
         -- 
           print ("Initializing Thread Manager...\n")
-          -- NOT IMPLEMENTED	  
+          -- init free list
+          freeList = new List [Thread]
+          -- init mutex
+          tManMutex = new Mutex
+          tManMutex.Init()
+          -- init condition
+          tManCond = new Condition
+          tManCond.Init()
+          -- init threads
+          -- threadTable = new array of Thread { MAX_NUMBER_OF_PROCESSES of Thread }
+          -- add all the Thread to the freeList
+          for i = 0 to MAX_NUMBER_OF_PROCESSES-1
+            freeList.AddToFront(&threadTable[i])
+          endFor
         endMethod
 
       ----------  ThreadManager . Print  ----------
@@ -735,8 +750,21 @@ code Kernel
         -- This method returns a new Thread; it will wait
         -- until one is available.
         --
-	  -- NOT IMPLEMENTED
-	  return null
+        -- TODO: Update status to JUST_CREATED
+          var
+            newThread: ptr to Thread
+          tManMutex.Lock()
+          if !freeList.IsEmpty()
+            -- just give next thread
+            newThread = freeList.Remove()
+          else
+            while freeList.IsEmpty()
+              tManCond.Wait(&tManMutex)
+            endWhile
+            newThread = freeList.Remove()
+          endIf
+          tManMutex.Unlock()
+          return newThread
         endMethod
 
       ----------  ThreadManager . FreeThread  ----------
@@ -746,7 +774,12 @@ code Kernel
         -- This method is passed a ptr to a Thread;  It moves it
         -- to the FREE list.
         --
-	  -- NOT IMPLEMENTED
+        -- TODO: Update status to UNUSED
+          tManMutex.Lock()
+            freeList.AddToEnd(th)
+            -- tManCond.Broadcast(&tManMutex)
+            tManCond.Signal(&tManMutex)
+          tManMutex.Unlock()
         endMethod
 
     endBehavior
