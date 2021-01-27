@@ -713,9 +713,10 @@ code Kernel
           tManCond = new Condition
           tManCond.Init()
           -- init threads
-          -- threadTable = new array of Thread { MAX_NUMBER_OF_PROCESSES of Thread }
+          threadTable = new array of Thread { MAX_NUMBER_OF_PROCESSES of new Thread }
           -- add all the Thread to the freeList
           for i = 0 to MAX_NUMBER_OF_PROCESSES-1
+            threadTable[i].Init("user thread")
             freeList.AddToFront(&threadTable[i])
           endFor
         endMethod
@@ -763,6 +764,7 @@ code Kernel
             endWhile
             newThread = freeList.Remove()
           endIf
+          newThread.status = JUST_CREATED
           tManMutex.Unlock()
           return newThread
         endMethod
@@ -776,6 +778,7 @@ code Kernel
         --
         -- TODO: Update status to UNUSED
           tManMutex.Lock()
+            th.status = UNUSED
             freeList.AddToEnd(th)
             -- tManCond.Broadcast(&tManMutex)
             tManCond.Signal(&tManMutex)
