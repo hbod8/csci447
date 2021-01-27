@@ -904,6 +904,7 @@ code Kernel
           -- init free list
           freeList = new List [ProcessControlBlock]
           for i = 0 to MAX_NUMBER_OF_PROCESSES - 1
+            processTable[i].Init()
             freeList.AddToEnd(&processTable[i])
           endFor
           -- init next pid to 1
@@ -1110,6 +1111,8 @@ code Kernel
           frameManagerLock.Init ()
           newFramesAvailable = new Condition
           newFramesAvailable.Init ()
+          waitingLine = new Condition
+          waitingLine.Init()
           -- Check that the area to be used for paging contains zeros.
           -- The BLITZ emulator will initialize physical memory to zero, so
           -- if by chance the size of the kernel has gotten so large that
@@ -1175,8 +1178,15 @@ code Kernel
       method PutAFrame ( frameAddr: int )
         --
         -- Returns a frame allocated by GetAFrame.
-	--
-	  -- NOT IMPLEMENTED
+        --
+          var
+            bitNumber: int
+          frameManagerLock.Lock()
+          bitNumber = (frameAddr - PHYSICAL_ADDRESS_OF_FIRST_PAGE_FRAME) / PAGE_SIZE
+          framesInUse.ClearBit(bitNumber)
+          numberFreeFrames = numberFreeFrames + 1
+          newFramesAvailable.Signal(&frameManagerLock)
+          frameManagerLock.Unlock()
         endMethod
 
 
@@ -1184,18 +1194,53 @@ code Kernel
 
       method GetNewFrames (aPageTable: ptr to AddrSpace, numFramesNeeded: int)
         --
-	-- Allocate all frames needed for this AddrSpace      
-	--
-	  -- NOT IMPLEMENTED
+        -- Allocate all frames needed for this AddrSpace      
+        --
+          var
+            entry: int = 0
+            i: int
+            frameAddr: int = 0
+          frameManagerLock.Lock()
+          numWaiting = numWaiting + 1
+          if numWaiting > 1
+            waitingLine.Wait(&frameManagerLock)
+          endIf
+          while numFramesNeeded > numberFreeFrames
+            newFramesAvailable.Wait(&frameManagerLock)
+          endWhile
+          numWaiting = numWaiting - 1
+          for entry = 0 to numFramesNeeded - 1
+            i = framesInUse.FindZeroAndSet()
+            frameAddr = PHYSICAL_ADDRESS_OF_FIRST_PAGE_FRAME + (i * PAGE_SIZE)
+            aPageTable.SetFrameAddr(entry, frameAddr)
+          endFor
+          numberFreeFrames = numberFreeFrames - numFramesNeeded
+          waitingLine.Signal(&frameManagerLock)
+          aPageTable.numberOfPages = numFramesNeeded
+          frameManagerLock.Unlock()
         endMethod
 
       ----------  FrameManager . ReturnAllFrames  ----------
 
       method ReturnAllFrames (aPageTable: ptr to AddrSpace)
-          -- 
-	  -- Return all frames in the AddrSpace
-  	  --
-	    -- NOT IMPLEMENTED
+        -- 
+        -- Return all frames in the AddrSpace
+        --
+          var
+            entry: int
+            bitNumber: int
+            frameAddr: int
+            numFramesReturned: int
+          frameManagerLock.Lock()
+          numFramesReturned = aPageTable.numberOfPages
+          for entry = 0 to numFramesReturned - 1
+            frameAddr = aPageTable.ExtractFrameAddr(entry)
+            bitNumber = (frameAddr - PHYSICAL_ADDRESS_OF_FIRST_PAGE_FRAME) / PAGE_SIZE
+            framesInUse.ClearBit(bitNumber)
+          endFor
+          numberFreeFrames = numberFreeFrames + numFramesReturned
+          newFramesAvailable.Signal(&frameManagerLock)
+          frameManagerLock.Unlock()
         endMethod
 
     endBehavior
