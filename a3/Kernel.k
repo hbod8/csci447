@@ -888,8 +888,26 @@ code Kernel
         -- This method is called once at kernel startup time to initialize
         -- the one and only "processManager" object.  
         --
-         print ("Initializing Process Manager...\n")
-         -- NOT IMPLEMENTED
+          var
+            i: int
+          print ("Initializing Process Manager...\n")
+          -- init the process table array
+          processTable = new array of ProcessControlBlock { MAX_NUMBER_OF_PROCESSES of new ProcessControlBlock }
+          -- init mutex
+          processManagerLock = new Mutex
+          processManagerLock.Init()
+          -- init conditions
+          aProcessBecameFree = new Condition
+          aProcessBecameFree.Init()
+          aProcessDied = new Condition
+          aProcessDied.Init()
+          -- init free list
+          freeList = new List [ProcessControlBlock]
+          for i = 0 to MAX_NUMBER_OF_PROCESSES - 1
+            freeList.AddToEnd(&processTable[i])
+          endFor
+          -- init next pid to 1
+          nextPid = 1
         endMethod
 
       ----------  ProcessManager . Print  ----------
@@ -944,8 +962,23 @@ code Kernel
         -- This method returns a new ProcessControlBlock; it will wait
         -- until one is available.
         --
-	  -- NOT IMPLEMENTED
-	  return null
+          var
+            newProcess: ptr to ProcessControlBlock
+          processManagerLock.Lock()
+          if !freeList.IsEmpty()
+            -- just give next process
+            newProcess = freeList.Remove()
+          else
+            while freeList.IsEmpty()
+              aProcessBecameFree.Wait(&processManagerLock)
+            endWhile
+            newProcess = freeList.Remove()
+          endIf
+          newProcess.pid = nextPid
+          nextPid = nextPid + 1
+          newProcess.status = ACTIVE
+          processManagerLock.Unlock()
+          return newProcess
         endMethod
 
       ----------  ProcessManager . FreeProcess  ----------
@@ -955,8 +988,13 @@ code Kernel
         -- This method is passed a ptr to a Process;  It moves it
         -- to the FREE list.
         --
-	  -- NOT IMPLEMENTED
- 	endMethod
+          processManagerLock.Lock()
+          p.status = FREE
+          freeList.AddToEnd(p)
+          -- aProcessBecameFree.Broadcast(&processManagerLock)
+          aProcessBecameFree.Signal(&processManagerLock)
+          processManagerLock.Unlock()
+        endMethod
 	
       ----------  ProcessManager . FindProcess  ----------
 
