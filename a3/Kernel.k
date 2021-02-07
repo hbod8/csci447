@@ -1643,13 +1643,12 @@ code Kernel
     -- for the duration of its execution.
     --
 -- Uncomment this code later...
-      FatalError ("DISK INTERRUPTS NOT EXPECTED IN PROJECT 3")
-/*    currentInterruptStatus = DISABLED
+      -- FatalError ("DISK INTERRUPTS NOT EXPECTED IN PROJECT 3")
+      currentInterruptStatus = DISABLED
       -- print ("DiskInterruptHandler invoked!\n")
       if diskDriver.semToSignalOnCompletion
         diskDriver.semToSignalOnCompletion.Up()
       endIf
-*/
     endFunction
 
 -----------------------------  SerialInterruptHandler  --------------------------

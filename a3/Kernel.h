@@ -21,7 +21,7 @@ header Kernel
     PAGE_SIZE = 8192                                  -- in hex: 0x0000 2000
     PHYSICAL_ADDRESS_OF_FIRST_PAGE_FRAME = 1048576    -- in hex: 0x0010 0000
     --NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512            -- in hex: 0x0000 0200
-    NUMBER_OF_PHYSICAL_PAGE_FRAMES = 27               -- for testing only
+    NUMBER_OF_PHYSICAL_PAGE_FRAMES = 140               -- for testing only
 
     MAX_NUMBER_OF_PROCESSES = 10
     -- MAX_STRING_SIZE = 255
