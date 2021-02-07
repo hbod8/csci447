@@ -284,7 +284,7 @@ code System
   -- are allocated sequentially and any attempt to "free" memory is ignored.
   --
   const
-    HEAP_SIZE = 500000
+    HEAP_SIZE = 20000
   var
     memoryArea: array [HEAP_SIZE] of char
     nextCharToUse: int = 0

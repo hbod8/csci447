@@ -4,7 +4,63 @@
 # most-recent-update times.
 # 
 
-all: os
+all: os DISK
+
+#
+# Stuff related to user-level programs in general...
+#
+
+UserRuntime.o: UserRuntime.s
+	asm UserRuntime.s
+
+UserSystem.s: UserSystem.h UserSystem.k
+	kpl UserSystem -unsafe
+
+UserSystem.o: UserSystem.s
+	asm UserSystem.s
+
+#
+# Stuff related to user-level program 'MyProgram'...
+#
+
+MyProgram.s: UserSystem.h MyProgram.h MyProgram.k
+	kpl MyProgram -unsafe
+
+MyProgram.o: MyProgram.s
+	asm MyProgram.s
+
+MyProgram: UserRuntime.o UserSystem.o MyProgram.o Syscall.o
+	lddd UserRuntime.o UserSystem.o MyProgram.o Syscall.o -o MyProgram
+
+#
+# Stuff related to user-level program 'TestProgram1'...
+#
+
+TestProgram1.s: UserSystem.h TestProgram1.h TestProgram1.k
+	kpl TestProgram1 -unsafe
+
+TestProgram1.o: TestProgram1.s
+	asm TestProgram1.s
+
+TestProgram1: UserRuntime.o UserSystem.o TestProgram1.o Syscall.o
+	lddd UserRuntime.o UserSystem.o TestProgram1.o Syscall.o -o TestProgram1
+
+#
+# Stuff related to user-level program 'TestProgram2'...
+#
+
+TestProgram2.s: UserSystem.h TestProgram2.h TestProgram2.k
+	kpl TestProgram2 -unsafe
+
+TestProgram2.o: TestProgram2.s
+	asm TestProgram2.s
+
+TestProgram2: UserRuntime.o UserSystem.o TestProgram2.o Syscall.o
+	lddd UserRuntime.o UserSystem.o TestProgram2.o Syscall.o -o TestProgram2
+
+#
+# Stuff related to the os kernel...
+#
 
 Runtime.o: Runtime.s
 	asm Runtime.s
@@ -51,6 +107,17 @@ Main.o: Main.s
 os: Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o
 	lddd Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o -o os
 
+#
+# Stuff related to the DISK...
+#
+
+DISK: MyProgram TestProgram1 TestProgram2
+	rm -f DISK
+	toyfs -i -n10 -s250
+	toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+
 clean:
-	rm -f Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o os
-	rm -f System.s Syscall.s List.s BitMap.s Kernel.s Main.s
+	rm -f *.o Main.s Kernel.s BitMap.s List.s System.s Syscall.s
+	rm -f MyProgram.s TestProgram1.s TestProgram2.s UserSystem.s
+	rm -f os MyProgram TestProgram1 TestProgram2 DISK
+
