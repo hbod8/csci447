@@ -1115,6 +1115,7 @@ code Kernel
           -- sysArgs: ptr to array of ptr to array of char
           junk: int
           newAddrSpace: AddrSpace = new AddrSpace
+          argSpace: int
         junk = currProc.addrSpace.GetStringFromVirtual(&sysFilename, newProg asInteger, 2000)
 
         -- open exe file using fileSystem.Open()
@@ -1134,6 +1135,13 @@ code Kernel
           return
         endIf
 
+        --copy args
+        -- argSpace = processManager.CopyExecArgs(args, currProc.addrSpace, newAddrSpace)
+        if argSpace < 0
+          currProc.error = E_Bad_Address
+          return
+        endIf
+
         -- disable interrupts
         junk = SetInterruptsTo (DISABLED)
         -- free old frames
@@ -1146,8 +1154,51 @@ code Kernel
         onCpuThread.isUserThread = true
         -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
         initSystemStackTop = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
-        BecomeUserThread(newAddrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
+        BecomeUserThread(newAddrSpace.numberOfPages * PAGE_SIZE - argSpace, newPC, initSystemStackTop, 0)
      endMethod
+
+    ------------------  ProcessManager . CopyExecArgs  ------------------
+
+    method CopyExecArgs(args: ptr to array of ptr to array of char, oldAddrSpace: AddrSpace, newAddrSpace: AddrSpace) returns int
+        --
+        -- This funciton copies exec arguamnts between virtual memory address and returns the size allocated
+        --
+        var
+          size: int = 0
+          newVirtAddr: int
+          newPhysAddr: int
+          newVirtPage: int
+          offset: int
+          i: int
+          --pointerArray: ptr to array of ptr to array of char
+
+        -- init the virtual address and physical address at the end of the stack
+        newVirtAddr = newAddrSpace.numberOfPages * PAGE_SIZE
+        newVirtPage = newAddrSpace.numberOfPages - 1
+        newPhysAddr = newAddrSpace.ExtractFrameAddr(newVirtPage)
+        offset = PAGE_SIZE
+        newAddrSpace.Print()
+        print("number of pages:  ") printInt(newAddrSpace.numberOfPages) nl()
+        print("physical addr + offset:  ") printHex(newPhysAddr + offset) nl()
+        print("virtual address + offset:  ") printHex(newVirtAddr + offset) nl()
+
+        -- copy the pointer array onto stack
+        *((newPhysAddr + offset) asPtrTo int) = args arraySize
+        size = size + 4
+        offset = offset - 4
+        print("size of args: ") printInt(args arraySize) nl()
+        for i = 0 to ((args arraySize) - 1)
+          *((newPhysAddr + offset) asPtrTo int) = args[i] asInteger
+          print("copying ") printHex(args[i] asInteger) print(" to ") printHex(newPhysAddr + offset) nl()
+          size = size + 4
+          offset = offset - 4
+          if size > 2047
+            return -1
+          endIf
+        endFor
+
+        return size
+    endMethod
    endBehavior
 
 -----------------------------  PrintObjectAddr  ---------------------------------
@@ -1856,6 +1907,7 @@ code Kernel
     -- thread, which will have had interrupts ENABLED.
     --
       currentInterruptStatus = DISABLED
+      currProc = onCpuThread.myProc
       /*****
       print ("Within SyscallTrapHandler: syscallCodeNum=")
       printInt (syscallCodeNum)

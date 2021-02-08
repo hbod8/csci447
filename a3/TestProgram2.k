@@ -8,6 +8,8 @@ code TestProgram2
 
       print ("User-level program 'TestProgram2' is running!\n")
 
+      --print("@") printHex((&ix) asInteger) nl()
+
       print ("Command line arguments:\n")
       if cmdArgs == null
         print ("   None provided.\n")

@@ -280,6 +280,7 @@ header Kernel
       WaitForZombie (proc: ptr to ProcessControlBlock) returns int
       ForkNewProcess (userPC: int) returns int
       ExecNewProgram (newProg: String, args: ptr to array of ptr to array of char)
+      CopyExecArgs(args: ptr to array of ptr to array of char, oldAddrSpace: AddrSpace, newAddrSpace: AddrSpace) returns int
    endClass
 
   -----------------------------  FrameManager  ---------------------------------
