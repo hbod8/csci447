@@ -20,7 +20,7 @@ code TestProgram1
       arr2 = "Is this an arg?"
       print ("\nUser-level program 'TestProgram1' is running...\n")
       TestSyscallParameterPassing ()
-      --TestSyscallErrors()
+      TestSyscallErrors()
       --TestExec ()
       Sys_Shutdown ()
     endFunction

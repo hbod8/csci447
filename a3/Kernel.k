@@ -1926,7 +1926,7 @@ code Kernel
           offset = userPtr % PAGE_SIZE
           while size > 0
             if (virtPage >= currProc.addrSpace.numberOfPages) ||
-               (! currProc.addrSpace.IsValid (virtPage)) ||
+               (!currProc.addrSpace.IsValid (virtPage)) ||
                ((!currProc.addrSpace.IsWritable(virtPage)) && toStore)
 	      currProc.error = E_Bad_Address
                return false
@@ -2022,6 +2022,9 @@ code Kernel
       var
         ofilename: array [2000] of char
         junk: int
+      if !Valid_User_Pointer(filename asInteger, 2000, false)
+        return -1
+      endIf
       print("     Handle_Sys_Open invoked!\n")
       print("     filename virtual Addr = ") printHex(filename asInteger) nl()
       print("     filename = ")
@@ -2045,6 +2048,9 @@ code Kernel
 
   function Handle_Sys_Read (fileDesc: int, buffer: ptr to char, sizeInBytes: int)
            returns int
+      if !Valid_User_Pointer(buffer asInteger, sizeInBytes, true)
+        return -1
+      endIf
       print("     Handle_Sys_Read invoked!\n")
       print("     fileDesc = ") printInt(fileDesc)
       print("\n     buffer virtual addr = ") printHex (buffer asInteger) nl()
@@ -2056,6 +2062,9 @@ code Kernel
 
   function Handle_Sys_Write (fileDesc: int, buffer: ptr to char, sizeInBytes: int)
            returns int
+      if !Valid_User_Pointer(buffer asInteger, sizeInBytes, true)
+        return -1
+      endIf
       print("     Handle_Sys_Write invoked!\n")
       print("     fileDesc = ") printInt(fileDesc) print("\n")
       print("     virt addr of buffer = 0x") printHex (buffer asInteger) nl()
@@ -2094,6 +2103,9 @@ code Kernel
       var
         fString: array [2000] of char
         junk: int
+      if !Valid_User_Pointer(statBuf asInteger, 20, true) || filename == null
+        return -1
+      endIf
       junk = currProc.addrSpace.CopyBytesFromVirtual((&fString) asInteger, filename asInteger, 2000)
       print("     Handle_Sys_Stat invoked!\n")
       printHexVar("     filename virtual addr", filename asInteger)
@@ -2108,6 +2120,9 @@ code Kernel
       var
         ofilename: array [2000] of char
         junk: int
+      if !Valid_User_Pointer(filename asInteger, 2000, false)
+        return -1
+      endIf
       junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
       print("     Handle_Sys_Chdir invoked!\n")
       print("     filename virtual addr = ") printHex (filename asInteger) nl()
