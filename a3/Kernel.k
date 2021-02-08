@@ -1910,8 +1910,35 @@ code Kernel
 ----------------------------- Not declared in the header -----------------------
 
   function Valid_User_Pointer ( userPtr: int, size: int, toStore: bool ) returns bool
-      -- NOT IMPLEMENTED
-      return true
+          var 
+            virtPage: int
+            offset: int
+          if size == 0
+            return false
+          elseIf size < 0
+	    currProc.error = E_Bad_Value
+            return false
+	  elseIf userPtr == 0
+	    currProc.error = E_Bad_Address
+	    return false
+          endIf
+          virtPage = userPtr / PAGE_SIZE
+          offset = userPtr % PAGE_SIZE
+          while size > 0
+            if (virtPage >= currProc.addrSpace.numberOfPages) ||
+               (! currProc.addrSpace.IsValid (virtPage)) ||
+               ((!currProc.addrSpace.IsWritable(virtPage)) && toStore)
+	      currProc.error = E_Bad_Address
+               return false
+            endIf
+            while offset < PAGE_SIZE
+              offset = offset + 1
+              size = size - 1
+            endWhile
+            virtPage = virtPage + 1
+            offset = 0
+          endWhile
+          return true
     endFunction
 
   function Valid_User_FD ( fdNum: int) returns bool
@@ -1963,18 +1990,20 @@ code Kernel
 -----------------------------  Handle_Sys_Fork  ---------------------------------
 
   function Handle_Sys_Fork () returns int
-      -- NOT IMPLEMENTED
-     currProc.error = E_Not_Imp
-      return -1
+      print("     Handle_Sys_Fork invoked!\n\n")
+      return 100
    endFunction
 
 
 -----------------------------  Handle_Sys_Join  ---------------------------------
 
   function Handle_Sys_Join (processID: int) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      print("     Handle_Sys_Join invoked!\n")
+      print("     processID = ")
+      printInt(processID)
+      nl()
+      nl()
+      return 200
     endFunction
 
 -----------------------------  Handle_Sys_Exec  ---------------------------------
@@ -1990,9 +2019,20 @@ code Kernel
 
   function Handle_Sys_Open (filename: ptr to array of char, flags, mode: int)
            returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      var
+        ofilename: array [2000] of char
+        junk: int
+      print("     Handle_Sys_Open invoked!\n")
+      print("     filename virtual Addr = ") printHex(filename asInteger) nl()
+      print("     filename = ")
+      junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
+      print(&ofilename)
+      print("\n     flags = ")
+      printInt(flags)
+      print("\n     mode = ")
+      printInt(mode)
+      print("\n\n")
+      return 300
     endFunction
 
 -----------------------------  Handle_Sys_Close  --------------------------------
@@ -2005,26 +2045,31 @@ code Kernel
 
   function Handle_Sys_Read (fileDesc: int, buffer: ptr to char, sizeInBytes: int)
            returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      print("     Handle_Sys_Read invoked!\n")
+      print("     fileDesc = ") printInt(fileDesc)
+      print("\n     buffer virtual addr = ") printHex (buffer asInteger) nl()
+      print("     sizeInBytes = ") printInt(sizeInBytes) print("\n\n")
+      return 400
     endFunction
 
 -----------------------------  Handle_Sys_Write  ---------------------------------
 
   function Handle_Sys_Write (fileDesc: int, buffer: ptr to char, sizeInBytes: int)
            returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      print("     Handle_Sys_Write invoked!\n")
+      print("     fileDesc = ") printInt(fileDesc) print("\n")
+      print("     virt addr of buffer = 0x") printHex (buffer asInteger) nl()
+      print("     sizeInBytes = ") printInt(sizeInBytes) print("\n\n")
+      return 500
    endFunction
 
 -----------------------------  Handle_Sys_Seek  ---------------------------------
 
   function Handle_Sys_Seek (fileDesc: int, newCurrentPos: int) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      print("     Handle_Sys_Seek invoked!\n")
+      print("     fileDesc = ") printInt(fileDesc) print("\n")
+      print("     newCurrentPos = ") printInt(newCurrentPos) print("\n\n")
+      return 600
    endFunction
 
 -----------------------------  Handle_Sys_Pipe  ------------------------------
@@ -2045,19 +2090,29 @@ code Kernel
 
 -----------------------------  Handle_Sys_Stat  -------------------------------
 
-  function Handle_Sys_Stat (filename: ptr to array of char,
-	 			 statBuf: ptr to statInfo) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+  function Handle_Sys_Stat (filename: ptr to array of char, statBuf: ptr to statInfo) returns int
+      var
+        fString: array [2000] of char
+        junk: int
+      junk = currProc.addrSpace.CopyBytesFromVirtual((&fString) asInteger, filename asInteger, 2000)
+      print("     Handle_Sys_Stat invoked!\n")
+      printHexVar("     filename virtual addr", filename asInteger)
+      print("     filename = ") print(&fString) print("\n")
+      print("     statBuf = 0x") printHex (statBuf asInteger) nl() nl()
+      return 700
     endFunction
 
 -----------------------------  Handle_Sys_Chdir    -------------------------------
 
   function Handle_Sys_Chdir (filename: ptr to array of char) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      var
+        ofilename: array [2000] of char
+        junk: int
+      junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
+      print("     Handle_Sys_Chdir invoked!\n")
+      print("     filename virtual addr = ") printHex (filename asInteger) nl()
+      print("     filename = ") print(&ofilename) print("\n\n")
+      return 800
     endFunction
 
 -----------------------------  Handle_Sys_OpenDir  -------------------------------
