@@ -1107,7 +1107,46 @@ code Kernel
       -- with a new program "newProg" if successful.  If not successful
       -- it just returns as a successful call will not return from
       -- this function.
-        -- NOT IMPLEMENTED
+        var
+        file: ptr to OpenFile
+          newPC: int
+          initSystemStackTop: int
+          sysFilename: array [2000] of char
+          -- sysArgs: ptr to array of ptr to array of char
+          junk: int
+          newAddrSpace: AddrSpace = new AddrSpace
+        junk = currProc.addrSpace.GetStringFromVirtual(&sysFilename, newProg asInteger, 2000)
+
+        -- open exe file using fileSystem.Open()
+        file = fileSystem.Open(&sysFilename, currProc.workingDir, 0, O_READ)
+        if file == null
+          currProc.error = E_No_Entry
+          return
+        endIf
+        -- load executable with OpenFile.LoadExecutable
+        newAddrSpace.Init()
+        newPC = file.LoadExecutable(&newAddrSpace)
+        -- close file
+        fileManager.Close(file)
+
+        if newPC < 0
+          currProc.error = E_No_Entry
+          return
+        endIf
+
+        -- disable interrupts
+        junk = SetInterruptsTo (DISABLED)
+        -- free old frames
+        frameManager.ReturnAllFrames(&currProc.addrSpace)
+        -- accept new addrspace
+        currProc.addrSpace = newAddrSpace
+        -- init page table regs
+        currProc.addrSpace.SetToThisPageTable()
+        -- set isUserThread to true, just to be sure
+        onCpuThread.isUserThread = true
+        -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
+        initSystemStackTop = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
+        BecomeUserThread(newAddrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
      endMethod
    endBehavior
 
@@ -2008,10 +2047,12 @@ code Kernel
 
 -----------------------------  Handle_Sys_Exec  ---------------------------------
 
- function Handle_Sys_Exec (filename: ptr to array of char,
-                            args: ptr to array of ptr to array of char)
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
+ function Handle_Sys_Exec (filename: ptr to array of char, args: ptr to array of ptr to array of char)
+      
+      if filename == null
+        return
+      endIf
+      processManager.ExecNewProgram(filename, args)
       return
    endFunction
 
