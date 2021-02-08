@@ -867,7 +867,7 @@ code Kernel
     -- Methods can not be passed as a parameter, so we must use a function
 
     function CallStartUserProcess (arg: int)
-     -- NOT IMPLEMENTED
+        processManager.StartUserProcess(arg)
       endFunction
 
     -- Helper function for ForkNewProcess
@@ -1043,7 +1043,33 @@ code Kernel
        --
        -- Used in starting the first User Process in this OS
        --
-         -- NOT IMPLEMENTED
+        var
+          newProcess: ptr to ProcessControlBlock
+          file: ptr to OpenFile
+          newPC: int
+          oldStatus: int
+          initSystemStackTop: int
+        newProcess = processManager.GetANewProcess()
+        newProcess.myThread = onCpuThread
+        onCpuThread.myProc = newProcess
+        -- open exe file using fileSystem.Open()
+        file = fileSystem.Open(INIT_NAME, fileSystem.rootDirectory, 0, O_READ)
+        -- load executable with OpenFile.LoadExecutable
+        newPC = file.LoadExecutable(&newProcess.addrSpace)
+        -- close file
+        fileManager.Close(file)
+        -- set working directory to fileSystem.rootDirectory using NewReference
+        newProcess.workingDir = fileSystem.rootDirectory.NewReference()
+        -- disable interrupts
+        oldStatus = SetInterruptsTo (DISABLED)
+        -- init page table regs
+        newProcess.addrSpace.SetToThisPageTable()
+        -- set isUserThread to true
+        onCpuThread.isUserThread = true
+        -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
+        initSystemStackTop = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
+        currProc = newProcess
+        BecomeUserThread(newProcess.addrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
       endMethod
 
     -------------------  ProcessManager . InitFirstProcess ---------------------
@@ -1053,7 +1079,11 @@ code Kernel
       -- Initialize the first process
       --    ... just get a thread and fork it to use CallStartUserProcess
       --
-        -- NOT IMPLEMENTED
+        var
+          newThread: ptr to Thread
+        newThread = threadManager.GetANewThread()
+        newThread.Init(INIT_NAME)
+        newThread.Fork(CallStartUserProcess, 0)
       endMethod
 
 
@@ -1801,6 +1831,7 @@ code Kernel
       nl ()
       *****/
       -- Error reset
+      -- printInt(currProc asInteger)
       if syscallCodeNum == SYSCALL_GETERROR
       	  return currProc.error
       else
