@@ -1,0 +1,275 @@
+Script started on 2021-02-08 04:19:25-08:00 [TERM="xterm-256color" TTY="/dev/pts/2" COLUMNS="198" LINES="28"]
+]0;harry@i9-9900X: ~/csci447/csci447_w21[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21[00m$ cd a3
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a3[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a3[00m$ make
+asm Runtime.s
+asm Switch.s
+kpl System -unsafe
+asm System.s
+kpl Syscall
+asm Syscall.s
+kpl List -unsafe
+asm List.s
+kpl BitMap -unsafe
+asm BitMap.s
+kpl Kernel -unsafe
+asm Kernel.s
+kpl Main -unsafe
+asm Main.s
+lddd Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o -o os
+asm UserRuntime.s
+kpl UserSystem -unsafe
+asm UserSystem.s
+kpl MyProgram -unsafe
+asm MyProgram.s
+lddd UserRuntime.o UserSystem.o MyProgram.o Syscall.o -o MyProgram
+kpl TestProgram1 -unsafe
+asm TestProgram1.s
+lddd UserRuntime.o UserSystem.o TestProgram1.o Syscall.o -o TestProgram1
+kpl TestProgram2 -unsafe
+asm TestProgram2.s
+lddd UserRuntime.o UserSystem.o TestProgram2.o Syscall.o -o TestProgram2
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a3[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a3[00m$ blitz -g os
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 140
+Initializing Disk Driver...
+Initializing File Manager...
+
+My user-level program is running!!!
+Syscall 'Shutdown' was invoked by a user thread
+
+====================  KPL PROGRAM TERMINATION  ====================
+
+****  A 'debug' instruction was encountered  *****
+Done!  The next instruction to execute will be:
+0010A8: C0100000       sethi   0x0000,r1	! 0x000010B8 = 4280 (noGoMessage)
+
+Entering machine-level debugger...
+======================================================
+=====                                            =====
+=====         The BLITZ Machine Emulator         =====
+=====                                            =====
+=====  Copyright 2001-2007, Harry H. Porter III  =====
+=====                                            =====
+======================================================
+
+Enter a command at the prompt.  Type 'quit' to exit or 'help' for
+info about commands.
+> q
+Number of Disk Reads    = 10
+Number of Disk Writes   = 0
+Instructions Executed   = 1542897
+Time Spent Sleeping     = 201
+    Total Elapsed Time  = 1543098
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a3[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a3[00m$ make
+kpl Kernel -unsafe
+asm Kernel.s
+kpl Main -unsafe
+asm Main.s
+lddd Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o -o os
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a3[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a3[00m$ makeblitz -g os
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 140
+Initializing Disk Driver...
+Initializing File Manager...
+
+User-level program 'TestProgram1' is running...
+
+***** Testing Syscall Parameter Passing *****
+
+***** About to call Sys_Fork...
+***** Should print:
+*****     Handle_Sys_Fork invoked!
+
+     Handle_Sys_Fork invoked!
+
+
+***** About to call Sys_Join...
+***** Should print:
+*****     Handle_Sys_Join invoked!
+*****     processID = 1111
+
+     Handle_Sys_Join invoked!
+     processID = 1111
+
+
+***** About to call Sys_Open...
+***** Should print:
+*****     Handle_Sys_Open invoked!
+*****     filename virtual Addr = 0x0000FFF8
+*****     filename = MyFileName
+*****     flags = 7
+*****     mode = 7
+
+     Handle_Sys_Open invoked!
+     filename virtual Addr = 0x0000FFF8
+     filename = MyFileName
+     flags = 7
+     mode = 7
+
+
+***** About to call Sys_Read...
+***** Should print:
+*****     Handle_Sys_Read invoked!
+*****     fileDesc = 2222
+*****     buffer virtual addr = 0x0000F0B4
+*****     sizeInBytes = 3333
+
+     Handle_Sys_Read invoked!
+     fileDesc = 2222
+     buffer virtual addr = 0x0000F0B4
+     sizeInBytes = 3333
+
+
+***** About to call Sys_Write...
+***** Should print:
+*****     Handle_Sys_Write invoked!
+*****     fileDesc = 4444
+*****     virt addr of buffer = 0x0x0000F0B4
+*****     sizeInBytes = 5555
+
+     Handle_Sys_Write invoked!
+     fileDesc = 4444
+     virt addr of buffer = 0x0x0000F0B4
+     sizeInBytes = 5555
+
+
+***** About to call Sys_Seek...
+***** Should print:
+*****     Handle_Sys_Seek invoked!
+*****     fileDesc = 6666
+*****     newCurrentPos = 7777
+
+     Handle_Sys_Seek invoked!
+     fileDesc = 6666
+     newCurrentPos = 7777
+
+
+***** About to call Sys_Stat...
+***** Should print:
+*****     Handle_Sys_Stat invoked!
+*****     filename virtual addr = 0x00012AA4
+*****     filename = StatFileName
+*****     statBuf = 0x0x00015E68
+
+     Handle_Sys_Stat invoked!
+     filename virtual addr = 0x00012AA4
+     filename = StatFileName
+     statBuf = 0x0x00015E68
+
+
+***** About to call Sys_Chdir...
+***** Should print:
+*****     Handle_Sys_Chdir invoked!
+*****     filename virtual addr = 0x00012978
+*****     filename = DirName
+
+     Handle_Sys_Chdir invoked!
+     filename virtual addr = 0x00012978
+     filename = DirName
+
+
+***** Syscall Test Complete *****
+
+***** Starting Syscall Error Tests *****
+Testing Sys_Open
+Okay.
+Okay.
+Testing Sys_Read
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+*****  ERROR: Sys_Read error code 6 should be 7.  *****
+Testing Sys_Write
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Testing Sys_Stat
+Okay.
+*****  ERROR: Sys_Stat error code 0 should be 6.  *****
+Okay.
+Okay.
+Okay.
+*****  ERROR: Sys_Stat error code 6 should be 7.  *****
+Testing Sys_Chdir
+Okay.
+Okay.
+
+***** Syscall Error Tests Complete *****
+
+***** Testing Exec Syscall *****
+
+***** About to call Sys_Exec with a non-existant file...
+***** Should print:
+*****     Okay
+
+Okay
+
+***** About to call Sys_Exec with an overly long file name...
+***** Should print:
+*****     Okay
+
+***************** ERROR: Bad error code, not E_Bad_Value
+
+***** About to call Sys_Exec with bad argument pointers...
+***** Should print:
+*****     Okay
+
+User-level program 'TestProgram2' is running!
+Command line arguments:
+   None provided.
+
+***** About to call Sys_Shutdown...
+***** Should print:
+*****     "Syscall 'Shutdown' was invoked by a user thread"
+
+Syscall 'Shutdown' was invoked by a user thread
+
+====================  KPL PROGRAM TERMINATION  ====================
+
+****  A 'debug' instruction was encountered  *****
+Done!  The next instruction to execute will be:
+0010A8: C0100000       sethi   0x0000,r1	! 0x000010B8 = 4280 (noGoMessage)
+
+Entering machine-level debugger...
+======================================================
+=====                                            =====
+=====         The BLITZ Machine Emulator         =====
+=====                                            =====
+=====  Copyright 2001-2007, Harry H. Porter III  =====
+=====                                            =====
+======================================================
+
+Enter a command at the prompt.  Type 'quit' to exit or 'help' for
+info about commands.
+> q
+Number of Disk Reads    = 22
+Number of Disk Writes   = 0
+Instructions Executed   = 2893968
+Time Spent Sleeping     = 379
+    Total Elapsed Time  = 2894347
+]0;harry@i9-9900X: ~/csci447/csci447_w21/a3[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/a3[00m$ exit
+exit
+
+Script done on 2021-02-08 04:20:27-08:00 [COMMAND_EXIT_CODE="0"]
