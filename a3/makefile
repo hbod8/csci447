@@ -13,7 +13,7 @@ all: os DISK
 UserRuntime.o: UserRuntime.s
 	asm UserRuntime.s
 
-UserSystem.s: UserSystem.h UserSystem.k
+UserSystem.s: UserSystem.h UserSystem.k Syscall.h
 	kpl UserSystem -unsafe
 
 UserSystem.o: UserSystem.s
@@ -59,6 +59,33 @@ TestProgram2: UserRuntime.o UserSystem.o TestProgram2.o Syscall.o
 	lddd UserRuntime.o UserSystem.o TestProgram2.o Syscall.o -o TestProgram2
 
 #
+# Stuff related to user-level program 'TestProgram3a'...
+#
+
+TestProgram3a.s: UserSystem.h Syscall.h TestProgram3a.h TestProgram3a.k
+	kpl TestProgram3a -unsafe
+
+TestProgram3a.o: TestProgram3a.s
+	asm TestProgram3a.s
+
+TestProgram3a: UserRuntime.o UserSystem.o TestProgram3a.o Syscall.o
+	lddd UserRuntime.o UserSystem.o TestProgram3a.o Syscall.o -o TestProgram3a
+
+#
+# Stuff related to user-level program 'TestProgram3'...
+#
+
+TestProgram3.s: UserSystem.h Syscall.h TestProgram3.h TestProgram3.k
+	kpl TestProgram3 -unsafe
+
+TestProgram3.o: TestProgram3.s
+	asm TestProgram3.s
+
+TestProgram3: UserRuntime.o UserSystem.o TestProgram3.o Syscall.o
+	lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+
+
+#
 # Stuff related to the os kernel...
 #
 
@@ -74,12 +101,6 @@ System.s: System.h System.k
 System.o: System.s
 	asm System.s
 
-Syscall.s: Syscall.k Syscall.h
-	kpl Syscall
-
-Syscall.o: Syscall.s
-	asm Syscall.s
-
 List.s: System.h List.h List.k
 	kpl List -unsafe
 
@@ -92,32 +113,49 @@ BitMap.s: System.h BitMap.h BitMap.k
 BitMap.o: BitMap.s
 	asm BitMap.s
 
-Kernel.s: System.h List.h BitMap.h Kernel.h Kernel.k
+Kernel.s: System.h List.h BitMap.h Kernel.h Kernel.k Syscall.h
 	kpl Kernel -unsafe
 
 Kernel.o: Kernel.s
 	asm Kernel.s
 
-Main.s: System.h List.h BitMap.h Kernel.h Main.h Main.k
+Main.s: System.h List.h BitMap.h Kernel.h Main.h Main.k Syscall.h
 	kpl Main -unsafe
 
 Main.o: Main.s
 	asm Main.s
 
-os: Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o
-	lddd Runtime.o Switch.o System.o Syscall.o List.o BitMap.o Kernel.o Main.o -o os
+Syscall.s: Syscall.k Syscall.h
+	kpl Syscall
+
+Syscall.o: Syscall.s
+	asm Syscall.s
+
+os: Runtime.o Switch.o System.o List.o BitMap.o Kernel.o Main.o Syscall.o
+	lddd Runtime.o Switch.o System.o List.o BitMap.o Kernel.o Main.o Syscall.o -o os
 
 #
 # Stuff related to the DISK...
 #
 
-DISK: MyProgram TestProgram1 TestProgram2
+#DISK: MyProgram TestProgram1 TestProgram2
+#	diskUtil -i
+#	diskUtil -a MyProgram MyProgram
+#	diskUtil -a TestProgram1 TestProgram1
+#	diskUtil -a TestProgram2 TestProgram2
+
+DISK: MyProgram TestProgram1 TestProgram2 TestProgram3 TestProgram3a
 	rm -f DISK
 	toyfs -i -n10 -s250
 	toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+	toyfs -a -x TestProgram3 TestProgram3a /
+	toyfs -a MyProgram xProg
 
 clean:
 	rm -f *.o Main.s Kernel.s BitMap.s List.s System.s Syscall.s
 	rm -f MyProgram.s TestProgram1.s TestProgram2.s UserSystem.s
 	rm -f os MyProgram TestProgram1 TestProgram2 DISK
+	rm -f TestProgram3 TestProgram3a TestProgram3.s TestProgram3a.s
+	rm -f *~
+
 
