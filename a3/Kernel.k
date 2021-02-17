@@ -873,7 +873,23 @@ code Kernel
     -- Helper function for ForkNewProcess
 
     function Finish_Fork_For_Child (userPC:int)
-      -- NOT IMPLEMENTED
+        -- a comment
+        var
+          oldStatus: int
+          initSST: int = 0
+        -- disable interrupts
+        oldStatus = SetInterruptsTo (DISABLED)
+        -- init page table regs
+        onCpuThread.myProc.addrSpace.SetToThisPageTable()
+        -- copy user regs
+        RestoreUserRegs(&onCpuThread.userRegs[0])
+        -- set isUserThread to true
+        onCpuThread.isUserThread = true
+        -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
+        -- onCpuThread.Print()
+        -- printInt(onCpuThread.systemStack[SYSTEM_STACK_SIZE-1])
+        initSST = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
+        BecomeUserThread(onCpuThread.myProc.addrSpace.numberOfPages * PAGE_SIZE, userPC, initSST, 0)
       endFunction
 
     -- Helper function for copying arguments from old address space to new
@@ -989,6 +1005,7 @@ code Kernel
         -- This method is passed a ptr to a Process;  It moves it
         -- to the FREE list.
         --
+          FatalError ("ThAtS iLlEgAl!")
           processManagerLock.Lock()
           p.status = FREE
           freeList.AddToEnd(p)
@@ -1003,7 +1020,16 @@ code Kernel
         --
         -- This method finds the process that has this pid
         --
-          -- NOT IMPLEMENTED
+          var
+            i: int
+          --processManagerLock.Lock()
+          -- find dat process
+          for i = 0 to MAX_NUMBER_OF_PROCESSES - 1
+            if processTable[i].pid == pid
+              return &processTable[i]
+            endIf
+          endFor
+          --processManagerLock.Unlock()
 	  return null
         endMethod
 
@@ -1012,7 +1038,32 @@ code Kernel
         --
 	-- This method allows a process to turn into a Zombie
 	--
-	  -- NOT IMPLEMENTED
+          var
+            i: int
+            parentPCB: ptr to ProcessControlBlock
+	  processManagerLock.Lock()
+          -- identify all zombie children, return them
+          for i = 0 to MAX_NUMBER_OF_PROCESSES - 1
+            if processTable[i].status == ZOMBIE && processTable[i].parentsPid == p.pid
+              -- die, for real this time
+              processTable[i].status = FREE
+              freeList.AddToEnd(&processTable[i])
+              aProcessBecameFree.Signal(&processManagerLock)
+            endIf
+          endFor
+          -- are a zombie's child? yes? then die, no? then chill
+          parentPCB = processManager.FindProcess(p.parentsPid)
+          if parentPCB != null
+            if parentPCB.status == ZOMBIE
+              p.status = FREE
+              freeList.AddToEnd(p)
+              aProcessBecameFree.Signal(&processManagerLock)
+            elseIf parentPCB.status == ACTIVE
+              p.status = ZOMBIE
+              aProcessDied.Broadcast(&processManagerLock)
+            endIf
+          endIf
+          processManagerLock.Unlock()
         endMethod
 
       ---------- ProcessManager . WaitForZombie ------------
@@ -1021,8 +1072,21 @@ code Kernel
 	-- This method allows a parent wait for a child to turn
 	-- into a Zombie and cleans up a Zombie once found.
 	--
-	  -- NOT IMPLEMENTED
-	  return -1
+          var
+            exitVal: int
+	  processManagerLock.Lock()
+          while proc.status != ZOMBIE
+            aProcessDied.Wait(&processManagerLock)
+          endWhile
+          exitVal = proc.exitStatus
+          if exitVal != 0
+            currProc.error = E_User_Process
+          endIf
+          proc.status = FREE
+          freeList.AddToEnd(proc)
+          aProcessBecameFree.Signal(&processManagerLock)
+          processManagerLock.Unlock()
+	  return exitVal
         endMethod
 
     -------------------- ProcessManager .  ProcessFinish  --------------------
@@ -1033,7 +1097,29 @@ code Kernel
       -- free the resources held by this process and will terminate the
       -- current thread.
       --
-        -- NOT IMPLEMENTED
+        var
+          interrupts: int
+          oldThread: ptr to Thread
+        -- save the exit status in the PCB
+        currProc.exitStatus = exitStatus
+        -- disable interrupts
+        interrupts = SetInterruptsTo (DISABLED)
+        -- disconnect and return the thread, set myThread and myProcess to null
+        currProc.myThread.myProc = null
+        oldThread = currProc.myThread
+        currProc.myThread = null
+        -- threadManager.FreeThread(oldThread)
+        -- set user therad to false
+        oldThread.isUserThread = false
+        -- enable interrupts
+        interrupts = SetInterruptsTo (interrupts)
+        -- close any open files @TODO
+        -- return all frames
+        frameManager.ReturnAllFrames(&currProc.addrSpace)
+        -- call TurnIntoZombie
+        processManager.TurnIntoZombie(currProc)
+        -- call ThreadFinish
+        ThreadFinish()
       endMethod
 
 
@@ -1094,8 +1180,37 @@ code Kernel
        -- This method makes a complete copy of the current process
        -- The return value is the PID of the new Child process
        --
-	 -- NOT IMPLEMENTED
-	 return -1
+         var
+           newPCB: ptr to ProcessControlBlock
+           newThread: ptr to Thread
+           --newAddrSpace: ptr to AddrSpace
+           i: int
+         -- get the PCB
+         newPCB = processManager.GetANewProcess()
+         -- get the thread
+         newThread = threadManager.GetANewThread()
+         -- init the PCB
+         newPCB.myThread = newThread
+         newPCB.parentsPid = currProc.pid
+         newThread.stackTop = & (newThread.systemStack[SYSTEM_STACK_SIZE-1])
+         newThread.myProc = newPCB
+         -- save user regs
+         SaveUserRegs(&newThread.userRegs[0])
+         -- Don’t forget to copy the fileDescriptor array here...
+         -- copy virtual addr space
+         frameManager.GetNewFrames(&newPCB.addrSpace, currProc.addrSpace.numberOfPages)
+         for i = 0 to currProc.addrSpace.numberOfPages
+           MemoryCopy(newPCB.addrSpace.ExtractFrameAddr(i), currProc.addrSpace.ExtractFrameAddr(i), PAGE_SIZE)
+           if currProc.addrSpace.IsWritable(i)
+             newPCB.addrSpace.SetWritable(i)
+           else
+             newPCB.addrSpace.ClearWritable(i)
+           endIf
+         endFor
+         -- send the child off and running
+         newThread.Fork(Finish_Fork_For_Child, userPC)
+         -- return the PID
+         return newPCB.pid
        endMethod
 
     ------------------  ProcessManager . ExecNewProgram  ------------------
@@ -2073,28 +2188,39 @@ code Kernel
 -----------------------------  Handle_Sys_Exit  ---------------------------------
 
   function Handle_Sys_Exit (returnStatus: int)
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return 
+      processManager.ProcessFinish(returnStatus)
+      return
     endFunction
 
 -----------------------------  Handle_Sys_Fork  ---------------------------------
 
   function Handle_Sys_Fork () returns int
-      print("     Handle_Sys_Fork invoked!\n\n")
-      return 100
+      var
+        oldPC: int
+      -- print("     Handle_Sys_Fork invoked!\n\n")
+      oldPC = GetOldUserPCFromSystemStack()
+      return processManager.ForkNewProcess(oldPC)
    endFunction
 
 
 -----------------------------  Handle_Sys_Join  ---------------------------------
 
   function Handle_Sys_Join (processID: int) returns int
-      print("     Handle_Sys_Join invoked!\n")
-      print("     processID = ")
-      printInt(processID)
-      nl()
-      nl()
-      return 200
+      -- print("     Handle_Sys_Join invoked!\n")
+      -- print("     processID = ")
+      -- printInt(processID)
+      -- nl()
+      -- nl()
+      var
+        childPCB: ptr to ProcessControlBlock
+        exitVal: int
+      childPCB = processManager.FindProcess(processID)
+      if childPCB == null || childPCB.parentsPid != currProc.pid
+        print("not a child or doesnt exist.") nl()
+        return -1
+      endIf
+      exitVal = processManager.WaitForZombie(childPCB)
+      return exitVal
     endFunction
 
 -----------------------------  Handle_Sys_Exec  ---------------------------------
