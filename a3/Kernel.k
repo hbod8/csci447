@@ -2,7 +2,7 @@
 
 code Kernel
 
-  -- < PUT YOUR NAME HERE >
+  -- Harry Saliba
 
 -----------------------------  InitializeScheduler  ---------------------------------
 
