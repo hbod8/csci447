@@ -2,7 +2,7 @@
 
 code Kernel
 
-  -- Harry Saliba
+  -- CSCI 447 - Winter 2021 -  Name: Harry Saliba
 
 -----------------------------  InitializeScheduler  ---------------------------------
 
@@ -889,7 +889,8 @@ code Kernel
         -- onCpuThread.Print()
         -- printInt(onCpuThread.systemStack[SYSTEM_STACK_SIZE-1])
         initSST = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
-        BecomeUserThread(onCpuThread.myProc.addrSpace.numberOfPages * PAGE_SIZE, userPC, initSST, 0)
+        -- initSST = onCpuThread.userRegs[14]
+        BecomeUserThread(onCpuThread.userRegs[14], userPC, initSST, 0)
       endFunction
 
     -- Helper function for copying arguments from old address space to new
@@ -1056,6 +1057,7 @@ code Kernel
           if parentPCB != null
             if parentPCB.status == ZOMBIE
               p.status = FREE
+              p.pid = -1
               freeList.AddToEnd(p)
               aProcessBecameFree.Signal(&processManagerLock)
             elseIf parentPCB.status == ACTIVE
@@ -1155,7 +1157,8 @@ code Kernel
         -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
         initSystemStackTop = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
         currProc = newProcess
-        BecomeUserThread(newProcess.addrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
+        -- BecomeUserThread(newProcess.addrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
+        BecomeUserThread(onCpuThread.userRegs[14], newPC, initSystemStackTop, 0)
       endMethod
 
     -------------------  ProcessManager . InitFirstProcess ---------------------
@@ -1199,7 +1202,7 @@ code Kernel
          -- Don’t forget to copy the fileDescriptor array here...
          -- copy virtual addr space
          frameManager.GetNewFrames(&newPCB.addrSpace, currProc.addrSpace.numberOfPages)
-         for i = 0 to currProc.addrSpace.numberOfPages
+         for i = 0 to currProc.addrSpace.numberOfPages - 1
            MemoryCopy(newPCB.addrSpace.ExtractFrameAddr(i), currProc.addrSpace.ExtractFrameAddr(i), PAGE_SIZE)
            if currProc.addrSpace.IsWritable(i)
              newPCB.addrSpace.SetWritable(i)
@@ -2002,7 +2005,7 @@ code Kernel
       else
         print ("  ERROR: currProc is null\n\n")
       endIf
-      onCpuThread.Print ()
+      onCpuThread.Print()
 
       -- Uncomment the following for even more information...
       -- threadManager.Print ()
