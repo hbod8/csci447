@@ -1157,8 +1157,8 @@ code Kernel
         -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
         initSystemStackTop = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
         currProc = newProcess
-        -- BecomeUserThread(newProcess.addrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
-        BecomeUserThread(onCpuThread.userRegs[14], newPC, initSystemStackTop, 0)
+        BecomeUserThread(newProcess.addrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
+        -- BecomeUserThread(onCpuThread.userRegs[14], newPC, initSystemStackTop, 0)
       endMethod
 
     -------------------  ProcessManager . InitFirstProcess ---------------------
