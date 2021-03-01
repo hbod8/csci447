@@ -985,13 +985,14 @@ code Kernel
           processManagerLock.Lock()
           if !freeList.IsEmpty()
             -- just give next process
-            newProcess = freeList.Remove()
           else
             while freeList.IsEmpty()
+              -- print("waiting for free process") nl()
+              -- processManager.Print()
               aProcessBecameFree.Wait(&processManagerLock)
             endWhile
-            newProcess = freeList.Remove()
           endIf
+          newProcess = freeList.Remove()
           newProcess.pid = nextPid
           nextPid = nextPid + 1
           newProcess.status = ACTIVE
@@ -1049,21 +1050,26 @@ code Kernel
               -- die, for real this time
               processTable[i].status = FREE
               freeList.AddToEnd(&processTable[i])
+              -- print("a process terminated and returned.") nl()
               aProcessBecameFree.Signal(&processManagerLock)
             endIf
           endFor
           -- are a zombie's child? yes? then die, no? then chill
+          -- print("parents id: ") printInt(p.parentsPid) nl()
           parentPCB = processManager.FindProcess(p.parentsPid)
-          if parentPCB != null
-            if parentPCB.status == ZOMBIE
-              p.status = FREE
-              p.pid = -1
-              freeList.AddToEnd(p)
-              aProcessBecameFree.Signal(&processManagerLock)
-            elseIf parentPCB.status == ACTIVE
-              p.status = ZOMBIE
-              aProcessDied.Broadcast(&processManagerLock)
+          if parentPCB == null || parentPCB.status == ZOMBIE
+            p.status = FREE
+            p.pid = -1
+            freeList.AddToEnd(p)
+            if (freeList.IsEmpty())
+              print("THIS IS BAD")
             endIf
+            -- print("a process terminated and returned.") nl()
+            aProcessBecameFree.Signal(&processManagerLock)
+          elseIf parentPCB.status == ACTIVE
+            -- printInt(p.pid) print(" became a zombie.") nl()
+            p.status = ZOMBIE
+            aProcessDied.Broadcast(&processManagerLock)
           endIf
           processManagerLock.Unlock()
         endMethod
@@ -1102,6 +1108,7 @@ code Kernel
         var
           interrupts: int
           oldThread: ptr to Thread
+        -- printInt(currProc.pid) print(" finishing") nl()
         -- save the exit status in the PCB
         currProc.exitStatus = exitStatus
         -- disable interrupts
@@ -1117,8 +1124,10 @@ code Kernel
         interrupts = SetInterruptsTo (interrupts)
         -- close any open files @TODO
         -- return all frames
+        -- print("returning frames") nl()
         frameManager.ReturnAllFrames(&currProc.addrSpace)
         -- call TurnIntoZombie
+        -- printInt(currProc.pid) print(" turning into zombie") nl()
         processManager.TurnIntoZombie(currProc)
         -- call ThreadFinish
         ThreadFinish()
@@ -1140,6 +1149,7 @@ code Kernel
         newProcess = processManager.GetANewProcess()
         newProcess.myThread = onCpuThread
         onCpuThread.myProc = newProcess
+        currProc = newProcess
         -- open exe file using fileSystem.Open()
         file = fileSystem.Open(INIT_NAME, fileSystem.rootDirectory, 0, O_READ)
         -- load executable with OpenFile.LoadExecutable
@@ -1156,7 +1166,6 @@ code Kernel
         onCpuThread.isUserThread = true
         -- call BecomeUserThread(initStackUserTop, initPC, initSystemStackTop, argPtr)
         initSystemStackTop = (&onCpuThread.systemStack[SYSTEM_STACK_SIZE-1]) asInteger
-        currProc = newProcess
         BecomeUserThread(newProcess.addrSpace.numberOfPages * PAGE_SIZE, newPC, initSystemStackTop, 0)
         -- BecomeUserThread(onCpuThread.userRegs[14], newPC, initSystemStackTop, 0)
       endMethod
@@ -1195,8 +1204,12 @@ code Kernel
          -- init the PCB
          newPCB.myThread = newThread
          newPCB.parentsPid = currProc.pid
-         newThread.stackTop = & (newThread.systemStack[SYSTEM_STACK_SIZE-1])
+         -- init the thread
          newThread.myProc = newPCB
+         newThread.name = "name"
+         newThread.status = JUST_CREATED
+         -- print("oh sh*t oh f*ck this should be the parents pid: ") printInt(currProc.pid) nl()
+         newThread.stackTop = & (newThread.systemStack[SYSTEM_STACK_SIZE-1])
          -- save user regs
          SaveUserRegs(&newThread.userRegs[0])
          -- Don’t forget to copy the fileDescriptor array here...
@@ -1476,7 +1489,13 @@ code Kernel
             bitNumber = (frameAddr - PHYSICAL_ADDRESS_OF_FIRST_PAGE_FRAME) / PAGE_SIZE
             framesInUse.ClearBit(bitNumber)
           endFor
+          -- print("Frames returned: ")
+          -- printInt(numFramesReturned)
+          -- nl()
           numberFreeFrames = numberFreeFrames + numFramesReturned
+          -- print("Free Frames: ")
+          -- printInt(numberFreeFrames)
+          -- nl()
           newFramesAvailable.Signal(&frameManagerLock)
           frameManagerLock.Unlock()
         endMethod
@@ -2026,6 +2045,11 @@ code Kernel
     --
       currentInterruptStatus = DISABLED
       currProc = onCpuThread.myProc
+      -- if syscallCodeNum == SYSCALL_FORK
+      --   print("Process ") printInt(currProc.pid) print(" called fork.") nl()
+      -- elseIf syscallCodeNum == SYSCALL_EXIT
+      --   print("Process ") printInt(currProc.pid) print(" called exit.") nl()
+      -- endIf
       /*****
       print ("Within SyscallTrapHandler: syscallCodeNum=")
       printInt (syscallCodeNum)

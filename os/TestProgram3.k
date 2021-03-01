@@ -24,17 +24,17 @@ code TestProgram3
     --     NUMBER_OF_ENVIRONMENT_PAGES = 0
 
 
-       -- SysExitTest ()
-        BasicForkTest ()
-       -- YieldTest ()
-       -- ForkTest ()
-       -- JoinTest1 ()
-       -- JoinTest2 ()
-       -- JoinTest3 ()
-       -- JoinTest4 ()
-       -- ManyProcessesTest1 ()
-       -- ManyProcessesTest2 ()
-       -- ManyProcessesTest3 ()
+       -- SysExitTest () -- passed
+       -- BasicForkTest () -- passed
+       -- YieldTest () -- passed
+       -- ForkTest () -- passed
+       -- JoinTest1 () -- passed
+       -- JoinTest2 () -- passed
+       -- JoinTest3 () -- passed
+       -- JoinTest4 () -- passed
+       -- ManyProcessesTest1 () -- passed
+       -- ManyProcessesTest2 () -- passed
+       -- ManyProcessesTest3 () -- passed
        -- ArgsWithForkTest()
        -- ErrorTest ()
        -- StatTest ()
@@ -684,9 +684,13 @@ code TestProgram3
 
       for i = 1 to 100
         pid = Sys_Fork ()
+        -- print("fork returned: ") printInt(pid) nl()
         if pid != 0
           -- Parent code
+          -- print("Child is ") printInt(pid) nl()
           Sys_Exit (0)
+        else
+          -- print("PID: ") printInt(Sys_GetPid()) nl()
         endIf
         print ("Child ")
         printInt (i)
