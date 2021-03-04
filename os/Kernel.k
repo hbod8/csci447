@@ -2026,7 +2026,7 @@ code Kernel
 
       -- Print some information about the offending process...
       if currProc
-        currProc.Print ()
+        -- currProc.Print ()
       else
         print ("  ERROR: currProc is null\n\n")
       endIf
@@ -2038,9 +2038,13 @@ code Kernel
 
       -- NOT IMPLEMENTED
       -- FatalError ("ErrorInUserProcess .. needs to be implemented.")
-
-      currProc.error = E_User_Process
-      processManager.TurnIntoZombie(currProc)
+      if onCpuThread.isUserThread
+        currProc = onCpuThread.myProc
+        currProc.error = E_User_Process
+        processManager.ProcessFinish(-1)
+      else
+        FatalError("Error in user process was called by a thread that wasn't a user thread.")
+      endIf
     endFunction
 
 -----------------------------  SyscallTrapHandler  --------------------------
