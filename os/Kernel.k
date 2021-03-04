@@ -1092,8 +1092,8 @@ code Kernel
             aProcessDied.Wait(&processManagerLock)
           endWhile
           exitVal = proc.exitStatus
-          if exitVal != 0
-            -- currProc.error = E_User_Process
+          if exitVal == -1
+             currProc.error = proc.error
           endIf
           proc.status = FREE
           freeList.AddToEnd(proc)
