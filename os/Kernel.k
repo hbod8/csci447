@@ -1083,12 +1083,17 @@ code Kernel
           var
             exitVal: int
 	  processManagerLock.Lock()
+          if proc.status == FREE
+            -- print("Yah thats bad") nl()
+            processManagerLock.Unlock()
+            return 0
+          endIf
           while proc.status != ZOMBIE
             aProcessDied.Wait(&processManagerLock)
           endWhile
           exitVal = proc.exitStatus
           if exitVal != 0
-            currProc.error = E_User_Process
+            -- currProc.error = E_User_Process
           endIf
           proc.status = FREE
           freeList.AddToEnd(proc)
@@ -1957,6 +1962,7 @@ code Kernel
       currentInterruptStatus = DISABLED
       printHexVar("Exception Data: Virtual Address", VA)
       ErrorInUserProcess ("An AddressException exception has occured while in user mode")
+      -- Print("An AddressException exception has occured while in user mode") nl()
     endFunction
 
 -----------------------------  PageInvalidExceptionHandler  --------------------------
@@ -2014,9 +2020,9 @@ code Kernel
     -- This routine is called when an error has occurred in a user-level
     -- process.  It prints the error message and terminates the process.
     --
-      print ("\n**********  ")
+      -- print ("\n**********  ")
       print (errorMessage)
-      print ("  **********\n\n")
+      -- print ("  **********\n\n")
 
       -- Print some information about the offending process...
       if currProc
@@ -2024,14 +2030,17 @@ code Kernel
       else
         print ("  ERROR: currProc is null\n\n")
       endIf
-      onCpuThread.Print()
+      -- onCpuThread.Print()
 
       -- Uncomment the following for even more information...
       -- threadManager.Print ()
       -- processManager.Print ()
 
       -- NOT IMPLEMENTED
-      FatalError ("ErrorInUserProcess .. needs to be implemented.")
+      -- FatalError ("ErrorInUserProcess .. needs to be implemented.")
+
+      currProc.error = E_User_Process
+      processManager.TurnIntoZombie(currProc)
     endFunction
 
 -----------------------------  SyscallTrapHandler  --------------------------
@@ -2243,7 +2252,8 @@ code Kernel
         exitVal: int
       childPCB = processManager.FindProcess(processID)
       if childPCB == null || childPCB.parentsPid != currProc.pid
-        print("not a child or doesnt exist.") nl()
+        -- print("not a child or doesnt exist.") nl()
+        currProc.error = E_No_Child
         return -1
       endIf
       exitVal = processManager.WaitForZombie(childPCB)

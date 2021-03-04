@@ -36,7 +36,7 @@ code TestProgram3
        -- ManyProcessesTest2 () -- passed
        -- ManyProcessesTest3 () -- passed
        -- ArgsWithForkTest()
-       -- ErrorTest ()
+        ErrorTest ()
        -- StatTest ()
 
       Sys_Exit (0)
