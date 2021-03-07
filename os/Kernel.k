@@ -2367,11 +2367,16 @@ code Kernel
         return -1
       endIf
       junk = currProc.addrSpace.CopyBytesFromVirtual((&fString) asInteger, filename asInteger, 2000)
-      print("     Handle_Sys_Stat invoked!\n")
-      printHexVar("     filename virtual addr", filename asInteger)
-      print("     filename = ") print(&fString) print("\n")
-      print("     statBuf = 0x") printHex (statBuf asInteger) nl() nl()
-      return 700
+--       junk = fileSystem.Stat(&fString, statBuf)
+--       if file == null
+--         currProc.error = E_No_Entry
+--         return -1
+--       endIf
+     -- print("     Handle_Sys_Stat invoked!\n")
+     -- printHexVar("     filename virtual addr", filename asInteger)
+     -- print("     filename = ") print(&fString) print("\n")
+     -- print("     statBuf = 0x") printHex (statBuf asInteger) nl() nl()
+      return fileSystem.Stat(&fString, statBuf)
     endFunction
 
 -----------------------------  Handle_Sys_Chdir    -------------------------------
@@ -3275,8 +3280,30 @@ code Kernel
 
     --------------- ToyFs . Stat  ----------------
     method Stat (localName: String, statBuf: ptr to statInfo) returns int
-        -- NOT IMPLEMENTED
-	return -1
+        var
+          inode: int
+          filecb: ptr to FileControlBlock
+          stat: statInfo
+          junk: int
+        -- get inode number by filename string lookup
+        inode = fileSystem.NameToInodeNum(localName, currProc.workingDir)
+        if inode == -1
+          currProc.error = E_No_Entry
+          return -1
+        endIf
+        -- get the file control blcok with the inode number
+        filecb = fileSystem.GetFCB(inode)
+        -- fill out the statinfo record
+        stat.inodeNum = inode
+        stat.nlinks = filecb.inode.nlinks
+        stat.mode = filecb.inode.mode
+        stat.fsize = filecb.inode.fsize
+        stat.balloc = filecb.inode.balloc
+        -- print("fsize: ") printInt(stat.fsize) nl()
+        -- printInt((&stat) asInteger) nl()
+        -- TODO: handle errors & fill out filecb and copybytestovirtual
+        junk = currProc.addrSpace.CopyBytesToVirtual((statBuf) asInteger, (&stat) asInteger, sizeOf statInfo)
+	return 0
       endMethod
 
     --------------- ToyFs . ChMode  ----------------
