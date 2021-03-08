@@ -1,0 +1,972 @@
+Script started on 2021-03-07 19:30:24-08:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="196" LINES="21"]
+]0;harry@i9-9900X: ~/csci447/csci447_w21[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21[00m$ cd os
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make
+make: Nothing to be done for 'all'.
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ blitz -os [K[K[Kg os [K
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+SysExitTest running.
+
+About to terminate the only process; should cause the OS to stop on a 'wait' instruction.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 3786604
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 3807138
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+BasicForkTest running.
+
+I am the child
+I am the parent
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 3972908
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 3993442
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+YieldTest running.
+
+This test involves calls to Fork, Yield, and Exit.
+
+RUN ONE: You should see 10 'compiler' messages and 10 'OS' messages.
+
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+
+RUN TWO: You should see the same 20 messages, but the order should be different, due to the presence of 'Yield's.
+
+Designing compilers is fun!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Designing compilers is fun!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Designing compilers is fun!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Writing OS kernel code is a blast!
+Designing compilers is fun!
+Designing compilers is fun!
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 4474784
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 4495318
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+ForkTest running.
+
+This test involves calls to Fork, Yield, and Exit.
+There should be 26 columns (A-Z) printed.  Each letter should be printed 5 times.
+A
+ B
+  C
+   D
+    E
+     F
+      G
+       H
+        I
+ B
+  C
+   D
+     F
+    E
+      G
+       H
+        I
+A
+ B
+  C
+    E
+     F
+   D
+      G
+       H
+        I
+A
+ B
+    E
+  C
+     F
+   D
+      G
+       H
+        I
+A
+ B
+    E
+  C
+     F
+      G
+   D
+       H
+        I
+A
+         J
+          K
+           L
+            M
+             N
+              O
+               P
+                Q
+         J
+          K
+           L
+            M
+             N
+              O
+               P
+                Q
+         J
+          K
+            M
+           L
+             N
+              O
+               P
+                Q
+                 R
+                 R
+         J
+          K
+            M
+           L
+             N
+              O
+               P
+                Q
+                 R
+         J
+          K
+            M
+             N
+           L
+              O
+               P
+                Q
+                 R
+                  S
+                   T
+                    U
+                     V
+                      W
+                       X
+                        Y
+                         Z
+                  S
+                     V
+                    U
+                   T
+                      W
+                       X
+                        Y
+                         Z
+                 R
+                  S
+                     V
+                    U
+                   T
+                      W
+                       X
+                        Y
+                         Z
+                  S
+                     V
+                    U
+                   T
+                      W
+                       X
+                        Y
+                         Z
+                     V
+                    U
+                   T
+                      W
+                       X
+                        Y
+                  S
+                         Z
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 46891555
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 46912089
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+JoinTest 1 running.
+
+This test involves calls to Fork, Yield, Join and Exit.
+Running first test...
+This line should print first.
+This line should print second.
+Done.
+Running second test...
+This line should print first.
+This line should print second.
+Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 4820743
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 4841277
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+JoinTest 2 running.
+
+This test involves calls to Fork, Yield, and Exit.
+Creating 5 children...
+Child 1 running...
+Child 2 running...
+Child 3 running...
+Child 4 running...
+Child 5 running...
+Waiting for children in order 1, 2, 3, 4, 5...
+Creating 5 more children...
+Child 1 running...
+Child 3 running...
+Child 2 running...
+Child 4 running...
+Waiting for children in order 5, 4, 1, 3, 2...
+Child 5 running...
+Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 5699763
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 5720297
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+JoinTest3 running.
+
+This test involves 5 illegal calls to Sys_Join, waiting on non-existent children.
+In each case, it prints the return code, which should be -1.
+Return code from 1st call = -1
+Return code from 2nd call = -1
+Return code from 3rd call = -1
+Return code from 4th call = -1
+Return code from 5th call = -1
+Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 3793468
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 3814002
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+JoinTest4 running.
+
+   This test forks a child process and then waits on it twice.
+   The first call to Sys_Join should return its error code; the
+   second call to Sys_Join should return -1.
+
+The PID of the child = 2
+This should print first.
+This should print second.
+Okay (1).
+*****  ERROR: Return code from second call to Sys_Join = 0
+This should print first.
+The PID of the child = 3
+This should print second.
+Okay (3).
+*****  ERROR: Return code from second call to Sys_Join = 0
+
+   In the next test, we create 2 children, and each creates 2 children,
+   giving 7 processes in all.  Then each process attempts a Sys_Join on
+   every process except its own children, to make sure the result is -1.
+   Finally, each process with children waits on them.
+
+A.B.D is running...
+---------------
+A.B.E is running...
+---------------
+A.B is running...
+  My first  child is A.B.D   pid1 = 5
+  My second child is A.B.E   pid2 = 6
+---------------
+A is running...
+  My first  child is A.B   pid1 = 4
+  My second child is A.C   pid2 = 7
+---------------
+A.C.F is running...
+---------------
+A.C.G is running...
+---------------
+A.C is running...
+  My first  child is A.C.F   pid1 = 8
+  My second child is A.C.G   pid2 = 9
+---------------
+***** ERROR in process A *****
+*****  Arg to Sys_Join, i = 2
+*****  Result from Sys_Join was not -1; j = 0
+***** ERROR in process A *****
+*****  Arg to Sys_Join, i = 3
+*****  Result from Sys_Join was not -1; j = 0
+A.B.E done with error tests...
+A.B done with error tests...
+A.C.F done with error tests...
+A.C done with error tests...
+A done with error tests...
+A.C.G done with error tests...
+A.B.D done with error tests...
+-----------------------------------A.B is waiting on A.B.D     pid1 = 5
+-----------------------------------A.C is waiting on A.C.F     pid1 = 8
+-----------------------------------A is waiting on A.B     pid1 = 4
+A.B.E is done.
+A.C.F is done.
+-----------------------------------A.C is waiting on A.C.G     pid2 = 9
+A.C.G is done.
+A.C is done.
+A.B.D is done.
+-----------------------------------A.B is waiting on A.B.E     pid2 = 6
+A.B is done.
+-----------------------------------A is waiting on A.C     pid2 = 7
+A is done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 19455771
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 19476305
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+ManyProcessesTest1 running.
+
+This test should create 100 child processes.
+It should print 100 lines of output.
+Child 1
+Child 2
+Child 3
+Child 4
+Child 5
+Child 6
+Child 7
+Child 8
+Child 9
+Child 10
+Child 11
+Child 12
+Child 13
+Child 14
+Child 15
+Child 16
+Child 17
+Child 18
+Child 19
+Child 20
+Child 21
+Child 22
+Child 23
+Child 24
+Child 25
+Child 26
+Child 27
+Child 28
+Child 29
+Child 30
+Child 31
+Child 32
+Child 33
+Child 34
+Child 35
+Child 36
+Child 37
+Child 38
+Child 39
+Child 40
+Child 41
+Child 42
+Child 43
+Child 44
+Child 45
+Child 46
+Child 47
+Child 48
+Child 49
+Child 50
+Child 51
+Child 52
+Child 53
+Child 54
+Child 55
+Child 56
+Child 57
+Child 58
+Child 59
+Child 60
+Child 61
+Child 62
+Child 63
+Child 64
+Child 65
+Child 66
+Child 67
+Child 68
+Child 69
+Child 70
+Child 71
+Child 72
+Child 73
+Child 74
+Child 75
+Child 76
+Child 77
+Child 78
+Child 79
+Child 80
+Child 81
+Child 82
+Child 83
+Child 84
+Child 85
+Child 86
+Child 87
+Child 88
+Child 89
+Child 90
+Child 91
+Child 92
+Child 93
+Child 94
+Child 95
+Child 96
+Child 97
+Child 98
+Child 99
+Child 100
+Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 22545023
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 22565557
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+ManyProcessesTest2 running.
+
+This test attempts to create 9 new processes.
+It should print a line for each process and then it should print 123.
+Process 0
+Process 1
+Process 2
+Process 3
+Process 4
+Process 5
+Process 6
+Process 7
+Process 8
+Process 9
+Final return value = 123
+Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 5593956
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 5614490
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+ManyProcessesTest3 running.
+
+This test attempts to create 10 new processes.
+It should run out of resources and hang.
+Process 0
+Process 1
+Process 2
+Process 3
+Process 4
+Process 5
+Process 6
+Process 7
+Process 8
+Process 9
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 5422444
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 5442978
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+ArgsWithForkTest running.
+
+Sys_GetPPid error! should be -1. Value is 0
+Okay.
+%%% Number of args to copy: 10
+%%% Starting args at: 0x0000E000
+%%% Pointer to argument 0 in old VA is: 0x000112F4
+%%% Size of argument 0 is: 1
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 0 in new VA is: 0x0000DFCC
+%%% Pointer to argument 1 in old VA is: 0x000112EC
+%%% Size of argument 1 is: 3
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 1 in new VA is: 0x0000DFC4
+%%% Pointer to argument 2 in old VA is: 0x000112DC
+%%% Size of argument 2 is: 10
+%%% Allocated 4 + 12 bytes.
+%%% Pointer to argument 2 in new VA is: 0x0000DFB4
+%%% Pointer to argument 3 in old VA is: 0x000112D0
+%%% Size of argument 3 is: 5
+%%% Allocated 4 + 8 bytes.
+%%% Pointer to argument 3 in new VA is: 0x0000DFA8
+%%% Pointer to argument 4 in old VA is: 0x000112C8
+%%% Size of argument 4 is: 1
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 4 in new VA is: 0x0000DFA0
+%%% Pointer to argument 5 in old VA is: 0x000112C0
+%%% Size of argument 5 is: 1
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 5 in new VA is: 0x0000DF98
+%%% Pointer to argument 6 in old VA is: 0x000112B8
+%%% Size of argument 6 is: 1
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 6 in new VA is: 0x0000DF90
+%%% Pointer to argument 7 in old VA is: 0x000112B0
+%%% Size of argument 7 is: 1
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 7 in new VA is: 0x0000DF88
+%%% Pointer to argument 8 in old VA is: 0x000112A8
+%%% Size of argument 8 is: 1
+%%% Allocated 4 + 4 bytes.
+%%% Pointer to argument 8 in new VA is: 0x0000DF80
+%%% Pointer to argument 9 in old VA is: 0x00011298
+%%% Size of argument 9 is: 11
+%%% Allocated 4 + 12 bytes.
+%%% Pointer to argument 9 in new VA is: 0x0000DF70
+%%% Done copying args, total bytes copied: 144
+
+User Program Error: Attempt to use a null pointer!  Type 'st' to see stack.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 22
+Number of Disk Writes   = 0
+Instructions Executed   = 4008751
+Time Spent Sleeping     = 29407
+    Total Elapsed Time  = 4038158
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ mak[K[K[Kmake && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+ErrorTest running.
+
+Should print "User Program Error: Attempt to use a null pointer!"...
+
+User Program Error: Attempt to use a null pointer!  Type 'st' to see stack.
+
+Okay.
+Okay.
+
+Should print "An AddressException exception has occured while in user mode"...
+Exception Data: Virtual Address = 0x00000000
+An AddressException exception has occured while in user mode  ERROR: currProc is null
+
+
+Okay.
+Okay.
+
+Should print "A PageReadonlyException exception has occured while in user mode"...
+A PageReadonlyException exception has occured while in user mode  ERROR: currProc is null
+
+
+Okay.
+Okay.
+
+Child started to exit with -1.
+Joining child.
+Okay.
+Okay.
+
+Exec error checks: 
+Okay.
+*****  ERROR: Return value from syscall (0) is incorrect  *****
+
+Error Tests Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 4571043
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 4591577
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ make && blitz -g os
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+rm -f DISK
+toyfs -i -n10 -s250
+Creating a new Toy File system named DISK:
+    128 inodes, 250 sectors
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a MyProgram xProg
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+
+StatTest running.
+
+Should print a line for /, MyProgram, TestProgram1-3a and error
+1 drw- 2 148 /
+2 -rwx 1 63241 MyProgram
+3 -rwx 1 105174 TestProgram1
+4 -rwx 1 64184 TestProgram2
+5 -rwx 1 114625 TestProgram3
+6 -rwx 1 64262 TestProgram3a
+Sys_Stat failed.
+Stat error code: Okay.
+Okay.
+
+Done.
+
+*****  A 'wait' instruction was executed and no more interrupts are scheduled... halting emulation!  *****
+
+Done!  The next instruction to execute will be:
+001168: 09000000       ret     
+Number of Disk Reads    = 15
+Number of Disk Writes   = 0
+Instructions Executed   = 4757196
+Time Spent Sleeping     = 20534
+    Total Elapsed Time  = 4777730
+]0;harry@i9-9900X: ~/csci447/csci447_w21/os[01;32mharry@i9-9900X[00m:[01;34m~/csci447/csci447_w21/os[00m$ exit
+exit
+
+Script done on 2021-03-07 19:33:54-08:00 [COMMAND_EXIT_CODE="0"]
