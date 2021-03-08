@@ -10,7 +10,8 @@ code TestProgram2
 
       --print("@") printHex((&ix) asInteger) nl()
 
-      print ("Command line arguments:\n")
+      print ("Command line arguments (") printHex((&cmdArgs) asInteger) print("):") nl()
+      -- debug
       if cmdArgs == null
         print ("   None provided.\n")
       else

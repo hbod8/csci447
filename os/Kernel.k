@@ -1272,7 +1272,7 @@ code Kernel
         endIf
 
         --copy args
-        -- argSpace = processManager.CopyExecArgs(args, currProc.addrSpace, newAddrSpace)
+        argSpace = processManager.CopyExecArgs(args, currProc.addrSpace, newAddrSpace)
         if argSpace < 0
           currProc.error = E_Bad_Address
           return
@@ -1301,37 +1301,99 @@ code Kernel
         --
         var
           size: int = 0
-          newVirtAddr: int
-          newPhysAddr: int
-          newVirtPage: int
-          offset: int
+          junk: int
           i: int
+          stack: int = newAddrSpace.numberOfPages * PAGE_SIZE -- place to start copying args
+          -- stack: int = 0x6000 -- place to start copying args
+          lenOfPtrArr: int -- length of the ptr to array of ptr to char
+          ptrToArg: int -- pointer to current arg is onld virtual addr space
+          newPtrToArg: int -- new pointer to current arg in new virtual addr space
+          lenOfArg: int -- len of current arg
+          sizeOfArgs: int = 0 -- running size of strings copied incl. size int and properly 4 byte aligned
+          temp: array [100] of char
+        --   currArg: int
+        -- copy the length of the pointer array to kernal space
+        junk = oldAddrSpace.CopyBytesFromVirtual((&lenOfPtrArr) asInteger, args asInteger, 4)
+        print("%%% Number of args to copy: ") printInt(lenOfPtrArr) nl()
+        -- copy the length of the pointer array to the stack of the new addrspace
+        junk = newAddrSpace.CopyBytesToVirtual(stack - size, (&lenOfPtrArr) asInteger, 4)
+        print("%%% Starting args at: ") printHex(stack - size) nl()
+        size = size + 4
+        -- copy each string and its pointer into the new addrspace
+        for i = 0 to lenOfPtrArr - 1
+          -- copy the pointer to the argument to kernal space
+          junk = oldAddrSpace.CopyBytesFromVirtual((&ptrToArg) asInteger, (args) asInteger + 4 + (i * 4), 4)
+          print("%%% Pointer to argument ") printInt(i) print(" in old VA is: ") printHex(ptrToArg) nl()
+          -- copy the length of the argument to kernal space
+          junk = oldAddrSpace.CopyBytesFromVirtual((&lenOfArg) asInteger, ptrToArg, 4)
+          print("%%% Size of argument ") printInt(i) print(" is: ") printInt(lenOfArg) nl()
+          -- calculate new pointer to argument
+          -- MOVED newPtrToArg = (stack) - (4 + (lenOfPtrArr * 4) + sizeOfArgs)
+          -- increment size of arg to the next 4 byte boundry
+          if lenOfArg % 4 > 0
+            sizeOfArgs = sizeOfArgs + 4 + (4 * (lenOfArg / 4 + 1))
+            -- calculate new pointer to argument
+            newPtrToArg = (stack) - (4 + (lenOfPtrArr * 4) + sizeOfArgs)
+            print("%%% Allocated 4 + ") printInt(4 * (lenOfArg / 4 + 1)) print(" bytes.") nl()
+            -- copy string to kernal space
+            junk = oldAddrSpace.CopyBytesFromVirtual((&temp) asInteger, ptrToArg + 4, 4 * (lenOfArg / 4 + 1))
+            -- copy string to new address space
+            junk = newAddrSpace.CopyBytesToVirtual(newPtrToArg + 4, (&temp) asInteger, 4 * (lenOfArg / 4 + 1))
+          else
+            sizeOfArgs = sizeOfArgs + 4 + lenOfArg
+            -- calculate new pointer to argument
+            newPtrToArg = (stack) - (4 + (lenOfPtrArr * 4) + sizeOfArgs)
+            print("%%% Allocated 4 + ") printInt(lenOfArg) print(" bytes.") nl()
+            -- copy string to kernal space
+            junk = oldAddrSpace.CopyBytesFromVirtual((&temp) asInteger, ptrToArg + 4, lenOfArg)
+            -- copy string to new address space
+            junk = newAddrSpace.CopyBytesToVirtual(newPtrToArg + 4, (&temp) asInteger, lenOfArg)
+          endIf
+          print("%%% Pointer to argument ") printInt(i) print(" in new VA is: ") printHex(newPtrToArg) nl()
+          -- copy new pointer
+          junk = newAddrSpace.CopyBytesToVirtual(stack - size, (&newPtrToArg) asInteger, 4)
+          size = size + 4
+          -- copy length to new va space
+          junk = newAddrSpace.CopyBytesToVirtual(newPtrToArg, (&lenOfArg) asInteger, 4)
+        endFor
+        size = size + sizeOfArgs
+        print("%%% Done copying args, total bytes copied: ") printInt(size) nl()
+
+        -- OLD IMPLEMENTATION:
+        -- var
+        --   size: int = 0
+        --   newVirtAddr: int
+        --   newPhysAddr: int
+        --   newVirtPage: int
+        --   offset: int
+        --   i: int
           --pointerArray: ptr to array of ptr to array of char
 
         -- init the virtual address and physical address at the end of the stack
-        newVirtAddr = newAddrSpace.numberOfPages * PAGE_SIZE
-        newVirtPage = newAddrSpace.numberOfPages - 1
-        newPhysAddr = newAddrSpace.ExtractFrameAddr(newVirtPage)
-        offset = PAGE_SIZE
-        newAddrSpace.Print()
-        print("number of pages:  ") printInt(newAddrSpace.numberOfPages) nl()
-        print("physical addr + offset:  ") printHex(newPhysAddr + offset) nl()
-        print("virtual address + offset:  ") printHex(newVirtAddr + offset) nl()
+        -- newVirtAddr = newAddrSpace.numberOfPages * PAGE_SIZE
+        -- newVirtPage = newAddrSpace.numberOfPages - 1
+        -- newPhysAddr = newAddrSpace.ExtractFrameAddr(newVirtPage)
+        -- offset = PAGE_SIZE
+        -- newAddrSpace.Print()
+        -- print("number of pages:  ") printInt(newAddrSpace.numberOfPages) nl()
+        -- print("physical addr + offset:  ") printHex(newPhysAddr + offset) nl()
+        -- print("virtual address + offset:  ") printHex(newVirtAddr + offset) nl()
 
-        -- copy the pointer array onto stack
-        *((newPhysAddr + offset) asPtrTo int) = args arraySize
-        size = size + 4
-        offset = offset - 4
-        print("size of args: ") printInt(args arraySize) nl()
-        for i = 0 to ((args arraySize) - 1)
-          *((newPhysAddr + offset) asPtrTo int) = args[i] asInteger
-          print("copying ") printHex(args[i] asInteger) print(" to ") printHex(newPhysAddr + offset) nl()
-          size = size + 4
-          offset = offset - 4
-          if size > 2047
-            return -1
-          endIf
-        endFor
+        -- -- copy the pointer array onto stack
+        -- *((newPhysAddr + offset) asPtrTo int) = args arraySize
+        -- size = size + 4
+        -- offset = offset - 4
+        -- print("size of args: ") printInt(args arraySize) nl()
+        -- for i = 0 to ((args arraySize) - 1)
+        --   *((newPhysAddr + offset) asPtrTo int) = args[i] asInteger
+        --   print("copying ") printHex(args[i] asInteger) print(" to ") printHex(newPhysAddr + offset) nl()
+        --   size = size + 4
+        --   offset = offset - 4
+        --   if size > 2047
+        --     return -1
+        --   endIf
+        -- endFor
+
 
         return size
     endMethod

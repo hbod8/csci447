@@ -19,8 +19,8 @@ code TestProgram1
     --
       arr2 = "Is this an arg?"
       print ("\nUser-level program 'TestProgram1' is running...\n")
-      TestSyscallParameterPassing ()
-      TestSyscallErrors()
+      -- TestSyscallParameterPassing ()
+      -- TestSyscallErrors()
       TestExec ()
 
       Sys_Shutdown ()
@@ -319,6 +319,10 @@ code TestProgram1
       else
         print ("Okay\n")
       endIf
+
+      -- TEST ARGS
+      print ("\n***** About to call Sys_Exec with argument pointers...\n")
+      Sys_Exec ("TestProgram2", &ArgList)
 
       -- Test bad command line arguments
       print ("\n***** About to call Sys_Exec with bad argument pointers...\n")
