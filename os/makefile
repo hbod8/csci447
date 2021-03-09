@@ -23,7 +23,7 @@ UserSystem.o: UserSystem.s
 # Stuff related to user-level program 'MyProgram'...
 #
 
-MyProgram.s: UserSystem.h MyProgram.h MyProgram.k
+MyProgram.s: UserSystem.h MyProgram.h MyProgram.k Syscall.h
 	kpl MyProgram -unsafe
 
 MyProgram.o: MyProgram.s
@@ -36,7 +36,7 @@ MyProgram: UserRuntime.o UserSystem.o MyProgram.o Syscall.o
 # Stuff related to user-level program 'TestProgram1'...
 #
 
-TestProgram1.s: UserSystem.h TestProgram1.h TestProgram1.k
+TestProgram1.s: UserSystem.h TestProgram1.h TestProgram1.k Syscall.h
 	kpl TestProgram1 -unsafe
 
 TestProgram1.o: TestProgram1.s
@@ -49,7 +49,7 @@ TestProgram1: UserRuntime.o UserSystem.o TestProgram1.o Syscall.o
 # Stuff related to user-level program 'TestProgram2'...
 #
 
-TestProgram2.s: UserSystem.h TestProgram2.h TestProgram2.k
+TestProgram2.s: UserSystem.h TestProgram2.h TestProgram2.k Syscall.h
 	kpl TestProgram2 -unsafe
 
 TestProgram2.o: TestProgram2.s
@@ -62,7 +62,7 @@ TestProgram2: UserRuntime.o UserSystem.o TestProgram2.o Syscall.o
 # Stuff related to user-level program 'TestProgram3a'...
 #
 
-TestProgram3a.s: UserSystem.h Syscall.h TestProgram3a.h TestProgram3a.k
+TestProgram3a.s: UserSystem.h TestProgram3a.h TestProgram3a.k Syscall.h
 	kpl TestProgram3a -unsafe
 
 TestProgram3a.o: TestProgram3a.s
@@ -75,7 +75,7 @@ TestProgram3a: UserRuntime.o UserSystem.o TestProgram3a.o Syscall.o
 # Stuff related to user-level program 'TestProgram3'...
 #
 
-TestProgram3.s: UserSystem.h Syscall.h TestProgram3.h TestProgram3.k
+TestProgram3.s: UserSystem.h TestProgram3.h TestProgram3.k Syscall.h
 	kpl TestProgram3 -unsafe
 
 TestProgram3.o: TestProgram3.s
@@ -84,6 +84,54 @@ TestProgram3.o: TestProgram3.s
 TestProgram3: UserRuntime.o UserSystem.o TestProgram3.o Syscall.o
 	lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
 
+#
+# Stuff related to user-level program 'TestProgram3'...
+#
+
+TestProgram4.s: UserSystem.h TestProgram4.h TestProgram4.k Syscall.h
+	kpl TestProgram4 -unsafe
+
+TestProgram4.o: TestProgram4.s
+	asm TestProgram4.s
+
+TestProgram4: UserRuntime.o UserSystem.o TestProgram4.o Syscall.o
+	lddd UserRuntime.o UserSystem.o TestProgram4.o Syscall.o -o TestProgram4
+
+TestProgram4a.s: UserSystem.h TestProgram4a.h Syscall.o
+	kpl TestProgram4a
+
+TestProgram4a.o: TestProgram4a.s
+	asm TestProgram4a.s
+
+TestProgram4a: TestProgram4a.o UserSystem.o  Syscall.o UserRuntime.o
+	lddd UserRuntime.o UserSystem.o TestProgram4a.o Syscall.o -o TestProgram4a
+
+#
+# Stuff related to user-level program 'Program1'...
+#
+
+Program1.s: UserSystem.h Program1.h Program1.k Syscall.h
+	kpl Program1
+
+Program1.o: Program1.s
+	asm Program1.s
+
+Program1: UserRuntime.o UserSystem.o Program1.o Syscall.o
+	lddd UserRuntime.o UserSystem.o Program1.o Syscall.o -o Program1
+
+
+#
+# Stuff related to user-level program 'Program2'...
+#
+
+Program2.s: UserSystem.h Program2.h Program2.k Syscall.h
+	kpl Program2 -unsafe
+
+Program2.o: Program2.s
+	asm Program2.s
+
+Program2: UserRuntime.o UserSystem.o Program2.o Syscall.o
+	lddd UserRuntime.o UserSystem.o Program2.o Syscall.o -o Program2
 
 #
 # Stuff related to the os kernel...
@@ -144,18 +192,25 @@ os: Runtime.o Switch.o System.o List.o BitMap.o Kernel.o Main.o Syscall.o
 #	diskUtil -a TestProgram1 TestProgram1
 #	diskUtil -a TestProgram2 TestProgram2
 
-DISK: MyProgram TestProgram1 TestProgram2 TestProgram3 TestProgram3a
+DISK: MyProgram TestProgram1 TestProgram2 TestProgram3 TestProgram3a \
+	   TestProgram4 Program1 Program2 TestProgram4a\
+	   file1 file2 file3 file1234abcd \
+	   FileWithVeryLongName012345678901234567890123456789
 	rm -f DISK
 	toyfs -i -n10 -s250
 	toyfs -a -x MyProgram TestProgram1 TestProgram2 /
 	toyfs -a -x TestProgram3 TestProgram3a /
-	toyfs -a MyProgram xProg
+	toyfs -a -x TestProgram4 Program1 Program2 /
+	toyfs -a TestProgram4a /
+	toyfs -a file1 file2 file3 file1234abcd /
+	toyfs -a FileWithVeryLongName012345678901234567890123456789 /
+	toyfs -a MyProgram xProg 
 
 clean:
-	rm -f *.o Main.s Kernel.s BitMap.s List.s System.s Syscall.s
-	rm -f MyProgram.s TestProgram1.s TestProgram2.s UserSystem.s
-	rm -f os MyProgram TestProgram1 TestProgram2 DISK
-	rm -f TestProgram3 TestProgram3a TestProgram3.s TestProgram3a.s
+	rm -f *.o Main.s Kernel.s BitMap.s List.s System.s Syscall.s UserSystem.s
+	rm -f *Prog*.[os]
 	rm -f *~
 
-
+realclean: clean
+	rm -f os DISK
+	rm -f MyProgram TestProgram[1234] TestProgram3a Program[12] TestProgram4a
