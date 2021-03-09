@@ -1128,6 +1128,11 @@ code Kernel
         -- enable interrupts
         interrupts = SetInterruptsTo (interrupts)
         -- close any open files @TODO
+        for i = 0 to MAX_FILES_PER_PROCESS
+           if currProc.fileDescriptor[i] != null
+             fileManager.Close(currProc.fileDescriptor[i])
+           endIf
+         endFor
         -- return all frames
         -- print("returning frames") nl()
         frameManager.ReturnAllFrames(&currProc.addrSpace)
@@ -1218,6 +1223,11 @@ code Kernel
          -- save user regs
          SaveUserRegs(&newThread.userRegs[0])
          -- Don’t forget to copy the fileDescriptor array here...
+         for i = 0 to MAX_FILES_PER_PROCESS
+           if currProc.fileDescriptor[i] != null
+             newPCB.fileDescriptor[i] = currProc.fileDescriptor[i].NewReference()
+           endIf
+         endFor
          -- copy virtual addr space
          frameManager.GetNewFrames(&newPCB.addrSpace, currProc.addrSpace.numberOfPages)
          for i = 0 to currProc.addrSpace.numberOfPages - 1
@@ -2468,10 +2478,17 @@ code Kernel
 
 -----------------------------  Handle_Sys_OpenDir  -------------------------------
 
-  function Handle_Sys_OpenDir (filename: ptr to array of char) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+  function Handle_Sys_OpenDir (filename: ptr to array of char) returns integer
+      var
+        ofilename: array [2000] of char
+        fd: int
+        junk: int
+      if !Valid_User_Pointer(filename asInteger, 2000, false)
+        return -1
+      endIf
+      junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
+        fd = fileManager.Open(&ofilename, O_READ, 0, true)
+      return fd
     endFunction
 
 -----------------------------  Handle_Sys_ReadDir  -------------------------------
