@@ -2255,7 +2255,13 @@ code Kernel
     endFunction
 
   function Get_Open_FD (startAt: int ) returns int
-      -- NOT IMPLEMENTED
+      var
+        i: int
+      for i = startAt to MAX_FILES_PER_PROCESS - 1
+        if currProc.fileDescriptor[i] == null
+          return i
+        endIf
+      endFor
       return -1
     endFunction
 
@@ -2343,21 +2349,24 @@ code Kernel
            returns int
       var
         ofilename: array [2000] of char
+        fd: int
         junk: int
       if !Valid_User_Pointer(filename asInteger, 2000, false)
         return -1
       endIf
-      print("     Handle_Sys_Open invoked!\n")
-      print("     filename virtual Addr = ") printHex(filename asInteger) nl()
-      print("     filename = ")
+--       print("     Handle_Sys_Open invoked!\n")
+--       print("     filename virtual Addr = ") printHex(filename asInteger) nl()
+--       print("     filename = ")
       junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
-      print(&ofilename)
-      print("\n     flags = ")
-      printInt(flags)
-      print("\n     mode = ")
-      printInt(mode)
-      print("\n\n")
-      return 300
+--       print(&ofilename)
+--       print("\n     flags = ")
+--       printInt(flags)
+--       print("\n     mode = ")
+--       printInt(mode)
+--       print("\n\n")
+        -- call filemanager.open with isDir set to false
+        fd = fileManager.Open(&ofilename, flags, mode, false)
+      return fd
     endFunction
 
 -----------------------------  Handle_Sys_Close  --------------------------------
@@ -2781,10 +2790,40 @@ code Kernel
 
        ----------  FileManager . Open  ----------
     
-       method Open (localName: String, flags, mode: int, isDir: bool) returns int
-           -- NOT IMPLEMENTED
-           return -1
-         endMethod
+        method Open (localName: String, flags, mode: int, isDir: bool) returns int
+            var
+              newfd: int
+              newfile: ptr to OpenFile
+            -- validate flags
+            if flags != O_READ || flags != O_WRITE || flags != O_RDWR
+              currProc.error = E_Bad_Value
+              return -1
+            endIf
+            -- get an empty file descriptor using Get_Open_FD
+            newfd = Get_Open_FD(0)
+            -- if there are no open slots, return -1
+            if newfd == -1
+              return -1
+            endIf
+            -- ask filemanger to open the file
+            newfile = fileSystem.Open(localName, currProc.workingDir, flags, mode)
+            -- check its not null
+            if newfile == null
+              return -1
+            endIf
+            -- make sure its a file
+            if newfile.kind != DIRECTORY && isDir
+              currProc.error = E_Not_A_Directory
+              return -1
+            elseIf newfile.kind != FILE && !isDir
+              currProc.error = E_Permissions
+              return -1
+            endIf
+            -- set the entry in the fd table
+            currProc.fileDescriptor[newfd] = newfile
+            -- retrun the newfd
+            return newfd
+          endMethod
 
        ----------  FileManager . Close  ----------
 
