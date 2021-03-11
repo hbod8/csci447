@@ -1113,8 +1113,11 @@ code Kernel
         var
           interrupts: int
           oldThread: ptr to Thread
+          oldPcb: ptr to ProcessControlBlock
           i: int
         -- printInt(currProc.pid) print(" finishing") nl()
+        -- save a pointer to the fd list so we dont loose it
+        oldPcb = currProc
         -- save the exit status in the PCB
         currProc.exitStatus = exitStatus
         -- disable interrupts
@@ -1131,17 +1134,16 @@ code Kernel
         -- close any open files @TODO
         -- currProc.Print()
         for i = 0 to MAX_FILES_PER_PROCESS - 1
-        --    print("checking fd ") printInt(i) print(" = ") printInt(currProc.fileDescriptor[i] asInteger) nl()
-           if currProc.fileDescriptor[i] != null
-             fileManager.Close(currProc.fileDescriptor[i])
-           endIf
-         endFor
+          if oldPcb.fileDescriptor[i] != null
+            fileManager.Close(oldPcb.fileDescriptor[i])
+          endIf
+        endFor
         -- return all frames
         -- print("returning frames") nl()
-        frameManager.ReturnAllFrames(&currProc.addrSpace)
+        frameManager.ReturnAllFrames(&oldPcb.addrSpace)
         -- call TurnIntoZombie
         -- printInt(currProc.pid) print(" turning into zombie") nl()
-        processManager.TurnIntoZombie(currProc)
+        processManager.TurnIntoZombie(oldPcb)
         -- call ThreadFinish
         ThreadFinish()
       endMethod
@@ -2249,6 +2251,7 @@ code Kernel
           offset = userPtr % PAGE_SIZE
           while size > 0
             if (virtPage >= currProc.addrSpace.numberOfPages) ||
+               (virtPage < 0) ||
                (!currProc.addrSpace.IsValid (virtPage)) ||
                ((!currProc.addrSpace.IsWritable(virtPage)) && toStore)
 	      currProc.error = E_Bad_Address
@@ -2366,23 +2369,18 @@ code Kernel
   function Handle_Sys_Open (filename: ptr to array of char, flags, mode: int)
            returns int
       var
-        ofilename: array [2000] of char
+        ofilename: array [MAX_STRING_SIZE] of char
         fd: int
         junk: int
-      if !Valid_User_Pointer(filename asInteger, 2000, false)
+      if !Valid_User_Pointer(filename asInteger, MAX_STRING_SIZE, false)
         return -1
       endIf
---       print("     Handle_Sys_Open invoked!\n")
---       print("     filename virtual Addr = ") printHex(filename asInteger) nl()
---       print("     filename = ")
-      junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
---       print(&ofilename)
---       print("\n     flags = ")
---       printInt(flags)
---       print("\n     mode = ")
---       printInt(mode)
---       print("\n\n")
+      junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, MAX_STRING_SIZE)
         -- call filemanager.open with isDir set to false
+        if ofilename arraySize > 20
+          currProc.error = E_Bad_Value
+          return -1
+        endIf
         fd = fileManager.Open(&ofilename, flags, mode, false)
       return fd
     endFunction
@@ -2912,6 +2910,7 @@ code Kernel
       --
       method Close (open: ptr to OpenFile)
           var fcb: ptr to FileControlBlock
+        --   print("Closing a file with ptr: ") printHex(open asInteger) nl()
           if open == & serialTerminalFile
             return
           endIf
@@ -3301,7 +3300,9 @@ code Kernel
 	   lastElName[ix] = filename[lastElStart+ix]
 	endFor
 	--print ("NameToInodeNum: last element is: ") print (&lastElName) nl()
+        fileManager.fileManagerLock.Lock()
 	dirEnt = curDir.Lookup(&lastElName)
+        fileManager.fileManagerLock.Unlock()
 	fileManager.Close(curDir)
 
 	if dirEnt == null
@@ -3417,8 +3418,13 @@ code Kernel
 	  -- Process Open flags
 	  -- Check Permissions -- NOT IMPLEMENTED
 
-          -- Next, allocate an OpenFile, waiting if necessary.
-          open = fileManager.GetAnOpenFile(true)
+          -- Next, allocate an OpenFile, not waiting if necessary.
+          open = fileManager.GetAnOpenFile(false)
+          if open == null
+            currProc.error = E_No_Resource
+            fcb.Release()
+            return null
+          endIf
 
           -- Connect it to this FCB and set its "numberOfUsers" count.
 	  if (fcb.inode.mode & TYPE_FILE) == TYPE_FILE
@@ -3496,8 +3502,7 @@ code Kernel
 
       --------------- ToyFs . WriteFile  ----------------
 
-    method  WriteFile (file: ptr to OpenFile, userBuffer: ptr to char,
-                       sizeInBytes: int)  returns int
+    method  WriteFile (file: ptr to OpenFile, userBuffer: ptr to char, sizeInBytes: int)  returns int
 	var
           copiedSoFar, virtAddr, virtPage, offset, destAddr, thisChunkSize, nextPosInFile: int
         -- Big idea: handle file being in multiple sectors and userBuffer accross multiple pages
@@ -3515,17 +3520,19 @@ code Kernel
         while true
           -- compute the size of chuk we will read from the file buffer
           thisChunkSize = PAGE_SIZE - offset
+          -- if the amount we want to read is less than chunk size, adjust
+          if copiedSoFar + thisChunkSize > sizeInBytes
+            thisChunkSize = sizeInBytes - copiedSoFar
+          endIf
+          print("WRITE: Next chunk size = ") printInt(thisChunkSize) nl()
           -- if the file is shorter than the size to read, adjust
           if nextPosInFile + thisChunkSize > file.fcb.inode.fsize
             -- extend the file
             -- mark the inode as dirty
             file.fcb.inode.dirty = true
             -- update the size of the file
+            print("WRITE: Adding ") printInt(nextPosInFile + thisChunkSize - file.fcb.inode.fsize) print(" bytes to file.\n")
             file.fcb.inode.fsize = nextPosInFile + thisChunkSize
-          endIf
-          -- if the amount we want to read is less than chunk size, adjust
-          if copiedSoFar + thisChunkSize > sizeInBytes
-            thisChunkSize = sizeInBytes - copiedSoFar
           endIf
           -- check if we done
           if thisChunkSize <= 0
@@ -3536,7 +3543,7 @@ code Kernel
           -- some error checking
           if virtPage < 0 || virtPage >= currProc.addrSpace.numberOfPages || !currProc.addrSpace.IsValid(virtPage) || !currProc.addrSpace.IsWritable(virtPage)
             currProc.error = E_Bad_Address
-            print("Something went wrong.\n")
+        --     print("Something went wrong.\n")
             return -1
           endIf
           destAddr = currProc.addrSpace.ExtractFrameAddr(virtPage) + offset
@@ -4144,6 +4151,7 @@ code Kernel
             elseIf relativeSectorInBuffer != sector
 	      -- Read the sector before we do a partial write
 	      if !self.ReadSector (sector, true)
+                 fcbLock.Unlock()
 	         return false
 	      endIf
             endIf
@@ -4528,7 +4536,9 @@ code Kernel
 	   endIf
 
 	   -- See if it exists already
+           fileManager.fileManagerLock.Lock()
 	   ent = self.Lookup (filename)
+           fileManager.fileManagerLock.Lock()
 	   if ent != null
 	      -- print ("AddEntry: found name ") print(filename) nl()
 	      return false
