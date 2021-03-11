@@ -1113,6 +1113,7 @@ code Kernel
         var
           interrupts: int
           oldThread: ptr to Thread
+          i: int
         -- printInt(currProc.pid) print(" finishing") nl()
         -- save the exit status in the PCB
         currProc.exitStatus = exitStatus
@@ -2260,8 +2261,11 @@ code Kernel
     endFunction
 
   function Valid_User_FD ( fdNum: int) returns bool
-      -- NOT IMPLEMENTED
-      return true
+      if fdNum < MAX_FILES_PER_PROCESS && fdNum > -1 && currProc.fileDescriptor[fdNum] != null
+        return true
+      endIf
+      currProc.error = E_Bad_Value
+      return false
     endFunction
 
   function Get_Open_FD (startAt: int ) returns int
@@ -2382,7 +2386,11 @@ code Kernel
 -----------------------------  Handle_Sys_Close  --------------------------------
 
   function Handle_Sys_Close (fileDesc: int)
-      -- NOT IMPLEMENTED
+      if !Valid_User_FD(fileDesc)
+        return
+      endIf
+      fileManager.Close(currProc.fileDescriptor[fileDesc])
+      currProc.fileDescriptor[fileDesc] = null
     endFunction
 
 -----------------------------  Handle_Sys_Read  ---------------------------------
@@ -2478,7 +2486,7 @@ code Kernel
 
 -----------------------------  Handle_Sys_OpenDir  -------------------------------
 
-  function Handle_Sys_OpenDir (filename: ptr to array of char) returns integer
+  function Handle_Sys_OpenDir (filename: ptr to array of char) returns int
       var
         ofilename: array [2000] of char
         fd: int
