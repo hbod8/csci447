@@ -9,7 +9,7 @@ header Kernel
 
   const
 
-    INIT_NAME = "TestProgram3"
+    INIT_NAME = "TestProgram4"
 
     SYSTEM_STACK_SIZE = 1000       -- in words
     STACK_SENTINEL = 0x24242424    -- in ASCII, this is "$$$$"

@@ -1129,7 +1129,9 @@ code Kernel
         -- enable interrupts
         interrupts = SetInterruptsTo (interrupts)
         -- close any open files @TODO
-        for i = 0 to MAX_FILES_PER_PROCESS
+        -- currProc.Print()
+        for i = 0 to MAX_FILES_PER_PROCESS - 1
+        --    print("checking fd ") printInt(i) print(" = ") printInt(currProc.fileDescriptor[i] asInteger) nl()
            if currProc.fileDescriptor[i] != null
              fileManager.Close(currProc.fileDescriptor[i])
            endIf
@@ -1215,6 +1217,8 @@ code Kernel
          -- init the PCB
          newPCB.myThread = newThread
          newPCB.parentsPid = currProc.pid
+         -- pass a new refrence to the working directory
+         newPCB.workingDir = currProc.workingDir.NewReference()
          -- init the thread
          newThread.myProc = newPCB
          newThread.name = "name"
@@ -1224,7 +1228,7 @@ code Kernel
          -- save user regs
          SaveUserRegs(&newThread.userRegs[0])
          -- Don’t forget to copy the fileDescriptor array here...
-         for i = 0 to MAX_FILES_PER_PROCESS
+         for i = 0 to MAX_FILES_PER_PROCESS - 1
            if currProc.fileDescriptor[i] != null
              newPCB.fileDescriptor[i] = currProc.fileDescriptor[i].NewReference()
            endIf
@@ -2264,7 +2268,7 @@ code Kernel
       if fdNum < MAX_FILES_PER_PROCESS && fdNum > -1 && currProc.fileDescriptor[fdNum] != null
         return true
       endIf
-      currProc.error = E_Bad_Value
+      currProc.error = E_Bad_FD
       return false
     endFunction
 
@@ -2397,37 +2401,73 @@ code Kernel
 
   function Handle_Sys_Read (fileDesc: int, buffer: ptr to char, sizeInBytes: int)
            returns int
-      if !Valid_User_Pointer(buffer asInteger, sizeInBytes, true)
+      var
+        file: ptr to OpenFile
+      if sizeInBytes == 0
+        return 0
+      elseIf sizeInBytes < 0
+        -- print("ERROR: cannot read negative bytes")
+        currProc.error = E_Bad_Value
         return -1
       endIf
-      print("     Handle_Sys_Read invoked!\n")
-      print("     fileDesc = ") printInt(fileDesc)
-      print("\n     buffer virtual addr = ") printHex (buffer asInteger) nl()
-      print("     sizeInBytes = ") printInt(sizeInBytes) print("\n\n")
-      return 400
+--       print("chekcking valid user pointer\n")
+      if !Valid_User_Pointer(buffer asInteger, sizeInBytes, true)
+        currProc.error = E_Bad_Address
+        return -1
+      endIf
+--       print("checking fd\n")
+      if !Valid_User_FD(fileDesc)
+        return -1
+      endIf
+--       print("passed both checks\n")
+      file = currProc.fileDescriptor[fileDesc]
+--       printInt(file.flags) nl()
+      if file.flags != O_READ && file.flags != O_RDWR
+        currProc.error = E_Permissions
+        return -1
+      endIf
+      return fileSystem.ReadFile(file, buffer, sizeInBytes)
     endFunction
 
 -----------------------------  Handle_Sys_Write  ---------------------------------
 
   function Handle_Sys_Write (fileDesc: int, buffer: ptr to char, sizeInBytes: int)
            returns int
-      if !Valid_User_Pointer(buffer asInteger, sizeInBytes, true)
+      var
+        file: ptr to OpenFile
+      if sizeInBytes == 0
+        return 0
+      elseIf sizeInBytes < 0
+        -- print("ERROR: cannot read negative bytes")
+        currProc.error = E_Bad_Value
         return -1
       endIf
-      print("     Handle_Sys_Write invoked!\n")
-      print("     fileDesc = ") printInt(fileDesc) print("\n")
-      print("     virt addr of buffer = 0x") printHex (buffer asInteger) nl()
-      print("     sizeInBytes = ") printInt(sizeInBytes) print("\n\n")
-      return 500
+--       print("chekcking valid user pointer\n")
+      if !Valid_User_Pointer(buffer asInteger, sizeInBytes, true)
+        currProc.error = E_Bad_Address
+        return -1
+      endIf
+--       print("checking fd\n")
+      if !Valid_User_FD(fileDesc)
+        return -1
+      endIf
+--       print("passed both checks\n")
+      file = currProc.fileDescriptor[fileDesc]
+--       printInt(file.flags) nl()
+      if file.flags != O_WRITE && file.flags != O_RDWR
+        currProc.error = E_Permissions
+        return -1
+      endIf
+      return fileSystem.WriteFile(file, buffer, sizeInBytes)
    endFunction
 
 -----------------------------  Handle_Sys_Seek  ---------------------------------
 
   function Handle_Sys_Seek (fileDesc: int, newCurrentPos: int) returns int
-      print("     Handle_Sys_Seek invoked!\n")
-      print("     fileDesc = ") printInt(fileDesc) print("\n")
-      print("     newCurrentPos = ") printInt(newCurrentPos) print("\n\n")
-      return 600
+      if !Valid_User_FD(fileDesc)
+        return -1
+      endIf
+      return currProc.fileDescriptor[fileDesc].Seek(newCurrentPos)
    endFunction
 
 -----------------------------  Handle_Sys_Pipe  ------------------------------
@@ -2820,7 +2860,8 @@ code Kernel
               newfd: int
               newfile: ptr to OpenFile
             -- validate flags
-            if flags != O_READ || flags != O_WRITE || flags != O_RDWR
+            if flags != O_READ && flags != O_WRITE && flags != O_RDWR
+        --       print("ERROR: bad flags\n")
               currProc.error = E_Bad_Value
               return -1
             endIf
@@ -2828,19 +2869,28 @@ code Kernel
             newfd = Get_Open_FD(0)
             -- if there are no open slots, return -1
             if newfd == -1
+        --       print("ERROR: no fds\n")
+              currProc.error = E_No_Resource
               return -1
             endIf
             -- ask filemanger to open the file
+            if currProc.workingDir == null
+              print("Very bad.\n")
+            endIf
             newfile = fileSystem.Open(localName, currProc.workingDir, flags, mode)
             -- check its not null
             if newfile == null
+        --       print("ERROR: couldn't open file\n")
+              currProc.error = E_No_Entry
               return -1
             endIf
             -- make sure its a file
             if newfile.kind != DIRECTORY && isDir
+        --       print("ERROR: mis match dir/file\n")
               currProc.error = E_Not_A_Directory
               return -1
             elseIf newfile.kind != FILE && !isDir
+        --       print("ERROR: mis match dir/file\n")
               currProc.error = E_Permissions
               return -1
             endIf
@@ -3383,18 +3433,131 @@ code Kernel
         endMethod
 
       --------------- ToyFs . ReadFile  ----------------
-    method ReadFile (file: ptr to OpenFile, userBuffer: ptr to char,
-                     sizeInBytes: int)  returns int
-        -- NOT IMPLEMENTED
-        return -1
+    method ReadFile (file: ptr to OpenFile, userBuffer: ptr to char, sizeInBytes: int)  returns int
+        var
+          copiedSoFar, virtAddr, virtPage, offset, destAddr, thisChunkSize, nextPosInFile: int
+        -- Big idea: handle file being in multiple sectors and userBuffer accross multiple pages
+        -- validate user pointer
+        -- if !Valid_User_Pointer()
+        -- handle size errors
+        -- print("Reading ") printInt(sizeInBytes) print(" bytes\n")
+        -- calculate virtualpage and offset into the page
+        virtAddr = userBuffer asInteger
+        virtPage = virtAddr / PAGE_SIZE
+        offset = virtAddr % PAGE_SIZE
+        -- set vars
+        nextPosInFile = file.currentPos
+        -- print("TESTING123\n")
+        -- loop over every page
+        while true
+          -- compute the size of chuk we will read from the file buffer
+          thisChunkSize = PAGE_SIZE - offset
+          -- if the file is shorter than the size to read, adjust
+          if nextPosInFile + thisChunkSize > file.fcb.inode.fsize
+            thisChunkSize = file.fcb.inode.fsize - nextPosInFile
+          endIf
+          -- if the amount we want to read is less than chunk size, adjust
+          if copiedSoFar + thisChunkSize > sizeInBytes
+            thisChunkSize = sizeInBytes - copiedSoFar
+          endIf
+          -- check if we done
+          if thisChunkSize <= 0
+            --done
+            file.currentPos = file.currentPos + copiedSoFar
+            return copiedSoFar
+          endIf
+          -- some error checking
+          if virtPage < 0 || virtPage >= currProc.addrSpace.numberOfPages || !currProc.addrSpace.IsValid(virtPage) || !currProc.addrSpace.IsWritable(virtPage)
+            currProc.error = E_Bad_Address
+        --     print("Something went wrong.\n")
+            return -1
+          endIf
+          destAddr = currProc.addrSpace.ExtractFrameAddr(virtPage) + offset
+          -- do the read into destAddr, nextPos in file, chuckSize
+          if !file.fcb.SynchRead(destAddr, nextPosInFile, thisChunkSize)
+        --     print("SynchRead Failed")
+            return -1
+          endIf
+          currProc.addrSpace.SetDirty(virtPage)
+          currProc.addrSpace.SetReferenced(virtPage)
+          -- increment
+          nextPosInFile = nextPosInFile + thisChunkSize
+          copiedSoFar = copiedSoFar + thisChunkSize
+          virtPage = virtPage + 1
+          offset = 0
+          -- check if we done
+          if copiedSoFar == sizeInBytes
+          file.currentPos = file.currentPos + copiedSoFar
+            return copiedSoFar
+          endIf
+        endWhile
+        -- return -1
       endMethod
 
       --------------- ToyFs . WriteFile  ----------------
 
     method  WriteFile (file: ptr to OpenFile, userBuffer: ptr to char,
                        sizeInBytes: int)  returns int
-	-- NOT IMPLEMENTED
-        return -1
+	var
+          copiedSoFar, virtAddr, virtPage, offset, destAddr, thisChunkSize, nextPosInFile: int
+        -- Big idea: handle file being in multiple sectors and userBuffer accross multiple pages
+        -- validate user pointer
+        -- if !Valid_User_Pointer()
+        -- handle size errors
+        -- print("Reading ") printInt(sizeInBytes) print(" bytes\n")
+        -- calculate virtualpage and offset into the page
+        virtAddr = userBuffer asInteger
+        virtPage = virtAddr / PAGE_SIZE
+        offset = virtAddr % PAGE_SIZE
+        -- set vars
+        nextPosInFile = file.currentPos
+        -- loop over every page
+        while true
+          -- compute the size of chuk we will read from the file buffer
+          thisChunkSize = PAGE_SIZE - offset
+          -- if the file is shorter than the size to read, adjust
+          if nextPosInFile + thisChunkSize > file.fcb.inode.fsize
+            -- extend the file
+            -- mark the inode as dirty
+            file.fcb.inode.dirty = true
+            -- update the size of the file
+            file.fcb.inode.fsize = nextPosInFile + thisChunkSize
+          endIf
+          -- if the amount we want to read is less than chunk size, adjust
+          if copiedSoFar + thisChunkSize > sizeInBytes
+            thisChunkSize = sizeInBytes - copiedSoFar
+          endIf
+          -- check if we done
+          if thisChunkSize <= 0
+            --done
+            file.currentPos = file.currentPos + copiedSoFar
+            return copiedSoFar
+          endIf
+          -- some error checking
+          if virtPage < 0 || virtPage >= currProc.addrSpace.numberOfPages || !currProc.addrSpace.IsValid(virtPage) || !currProc.addrSpace.IsWritable(virtPage)
+            currProc.error = E_Bad_Address
+            print("Something went wrong.\n")
+            return -1
+          endIf
+          destAddr = currProc.addrSpace.ExtractFrameAddr(virtPage) + offset
+          -- do the write
+          if !file.fcb.SynchWrite(destAddr, nextPosInFile, thisChunkSize)
+        --     print("SynchRead Failed")
+            return -1
+          endIf
+          currProc.addrSpace.SetDirty(virtPage)
+          currProc.addrSpace.SetReferenced(virtPage)
+          -- increment
+          nextPosInFile = nextPosInFile + thisChunkSize
+          copiedSoFar = copiedSoFar + thisChunkSize
+          virtPage = virtPage + 1
+          offset = 0
+          -- check if we done
+          if copiedSoFar == sizeInBytes
+          file.currentPos = file.currentPos + copiedSoFar
+            return copiedSoFar
+          endIf
+        endWhile
       endMethod
 
       --------------- ToyFs . CreateFile  ----------------
@@ -3675,7 +3838,48 @@ code Kernel
       ----------- InodeData . AllocateNewSector () -------------
 
       method AllocateNewSector (logicalSector: int) returns bool
-          -- NOT IMPLEMENTED
+          var
+            newDataBlock: int
+            newIndirBlock: int
+            newFrame: int
+          -- Allocate a new data block
+          newDataBlock = fileSystem.AllocDataBlock()
+          if newDataBlock < 0
+            return false
+          endIf
+          -- update number of blocks and set inode as dirty
+          balloc = balloc + 1
+          dirty = true
+          -- check if the sector is logical or indirect
+          if logicalSector < 10
+            -- Logical, yay!
+            direct[logicalSector] = newDataBlock
+            dirty = true
+          else
+            -- Indirect, ugh, yuck.
+            if indir1 == 0
+              -- This is the first indirect, disgusting.
+              -- Allocate a new data block
+              newIndirBlock = fileSystem.AllocDataBlock()
+              if newDataBlock < 0
+                fileSystem.FreeDataBlock(newDataBlock)
+                balloc = balloc - 1
+                return false
+              endIf
+              -- Save it in inode.indir1
+              indir1 = newIndirBlock
+              -- Get a new frame, set it to the inode, and zero it
+              newFrame = frameManager.GetAFrame()
+              indSec = newFrame
+              balloc = balloc + 1
+              MemoryZero(newFrame, PAGE_SIZE)
+            else
+              
+            endIf
+            -- save the new indirect block
+            indir1 = newDataBlock
+            self.SaveIndirect()
+          endIf
           return false
         endMethod
 
@@ -4461,8 +4665,51 @@ code Kernel
 
       -- Seek to a byte position in a file or reset (via 0) a directory
       method Seek (newPos: int) returns int
-          -- NOT IMIPLEMENTED
-	  return -1
+          var
+            fsize: int
+          -- verify file or directory
+          if kind != FILE && kind != DIRECTORY
+        --     print("ERROR: Not a file or directory.\n")
+            currProc.error = E_Bad_Value
+            return -1
+          endIf
+          -- lock filemanager
+          fileManager.fileManagerLock.Lock()
+          -- validate the new position
+          fsize = fcb.inode.fsize
+          if kind == FILE
+            -- -1 thorugh file len is valid
+            if newPos < -1 || newPos > fsize
+        --       print("ERROR: Seek out of bounds.\n")s
+              fileManager.fileManagerLock.Unlock()
+              currProc.error = E_Bad_Value
+              return -1
+            endIf
+          else
+            -- 0 is the only valid input
+            if newPos != 0
+        --       print("ERROR: Cannot seek dir there.\n")
+              fileManager.fileManagerLock.Unlock()
+              currProc.error = E_Bad_Value
+              return -1
+            endIf
+          endIf
+          -- set the new position
+          if newPos == 0
+            -- seek the beginning of the file
+            newPos = 0
+          elseIf newPos == -1
+            -- seek the end of the file
+            newPos = fsize
+          else
+            -- normal seek
+            -- newPos = newPos + currentPos
+          endIf
+          -- just seek already
+          currentPos = newPos
+          -- unlock filemanager
+          fileManager.fileManagerLock.Unlock()
+          return newPos
         endMethod
 
   endBehavior
