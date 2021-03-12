@@ -2533,16 +2533,21 @@ code Kernel
         return -1
       endIf
       junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, 2000)
-        fd = fileManager.Open(&ofilename, O_READ, 0, true)
+      fd = fileManager.Open(&ofilename, O_READ, 0, true)
       return fd
     endFunction
 
 -----------------------------  Handle_Sys_ReadDir  -------------------------------
 
   function Handle_Sys_ReadDir (dFd: int, entPtr: ptr to dirEntry) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      if !Valid_User_FD(dFd)
+        currProc.error = E_Bad_FD
+        return -1
+      endIf
+      if !Valid_User_Pointer(entPtr asInteger, entSize(255), true)
+        return -1
+      endIf
+      return fileSystem.ReadDir(currProc.fileDescriptor[dFd], entPtr)
     endFunction
 
 -----------------------------  Handle_Sys_ChMode   -------------------------------
@@ -2865,6 +2870,7 @@ code Kernel
             endIf
             -- get an empty file descriptor using Get_Open_FD
             newfd = Get_Open_FD(0)
+        --     currProc.Print()
             -- if there are no open slots, return -1
             if newfd == -1
         --       print("ERROR: no fds\n")
@@ -3410,7 +3416,7 @@ code Kernel
           -- This will increment fcb.numberOfUsers if inode is
 	  -- already associated with a fcb in use.
           fcb = self.GetFCB (iNum)
-          if fcb == null 
+          if fcb == null
 	    currProc.error = E_No_Resource
             return null
           endIf
@@ -3524,14 +3530,14 @@ code Kernel
           if copiedSoFar + thisChunkSize > sizeInBytes
             thisChunkSize = sizeInBytes - copiedSoFar
           endIf
-          print("WRITE: Next chunk size = ") printInt(thisChunkSize) nl()
+        --   print("\tWRITE: Next chunk size = ") printInt(thisChunkSize) nl()
           -- if the file is shorter than the size to read, adjust
           if nextPosInFile + thisChunkSize > file.fcb.inode.fsize
             -- extend the file
             -- mark the inode as dirty
             file.fcb.inode.dirty = true
             -- update the size of the file
-            print("WRITE: Adding ") printInt(nextPosInFile + thisChunkSize - file.fcb.inode.fsize) print(" bytes to file.\n")
+        --     print("\tWRITE: Adding ") printInt(nextPosInFile + thisChunkSize - file.fcb.inode.fsize) print(" bytes to file.\n")
             file.fcb.inode.fsize = nextPosInFile + thisChunkSize
           endIf
           -- check if we done
@@ -3618,8 +3624,22 @@ code Kernel
     --------------- ToyFs . ReadDir  ----------------
 
     method ReadDir (file: ptr to OpenFile, entPtr: ptr to dirEntry) returns int
-        -- NOT IMPLEMENTED
-	return -1
+        var
+          de: ptr to dirEntry
+          junk: int
+        -- check that the file is a directory
+        if file.kind != DIRECTORY
+          currProc.error = E_Not_A_Directory
+          return -1
+        endIf
+        -- call get next entry
+        de = file.GetNextEntry(255)
+        if de == null
+          currProc.error = E_No_Entry
+          return -1
+        endIf
+        junk = currProc.addrSpace.CopyBytesToVirtual(entPtr asInteger, de asInteger, entSize(255))
+	return 0
       endMethod
 
     --------------- ToyFs . MakeDir  ----------------
@@ -3850,8 +3870,10 @@ code Kernel
             newIndirBlock: int
             newFrame: int
           -- Allocate a new data block
+        --   print("\tALLOCATE: allocating new data block.\n")
           newDataBlock = fileSystem.AllocDataBlock()
           if newDataBlock < 0
+        --     print("\tALLOCATE: data block number is less than 0.\n")
             return false
           endIf
           -- update number of blocks and set inode as dirty
@@ -3863,6 +3885,7 @@ code Kernel
             direct[logicalSector] = newDataBlock
             dirty = true
           else
+        --     print("\tALLOCATE: indirect.\n")
             -- Indirect, ugh, yuck.
             if indir1 == 0
               -- This is the first indirect, disgusting.
@@ -3871,6 +3894,7 @@ code Kernel
               if newDataBlock < 0
                 fileSystem.FreeDataBlock(newDataBlock)
                 balloc = balloc - 1
+                -- print("\tALLOCATE: failed to get a new data block.\n")
                 return false
               endIf
               -- Save it in inode.indir1
@@ -3880,14 +3904,18 @@ code Kernel
               indSec = newFrame
               balloc = balloc + 1
               MemoryZero(newFrame, PAGE_SIZE)
+              self.WriteInode()
             else
-              
+              self.GetIndirect()
             endIf
-            -- save the new indirect block
-            indir1 = newDataBlock
+            -- save the new indirect block into the indirect sector
+        --     print ("\tALLOCATE: Saving indirect block ") printInt(logicalSector) print(" into frame ") printHex(newFrame) print(" + ") printHex((logicalSector - 10) * 4) nl()
+            *((indSec + ((logicalSector - 10) * 4)) asPtrTo int) = newDataBlock
             self.SaveIndirect()
           endIf
-          return false
+          self.WriteInode()
+        --   print("\tALLOCATE: inode written back to disk.\n")
+          return true
         endMethod
 
       ----------- InodeData . GetIndirect () -------------
