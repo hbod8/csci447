@@ -39,6 +39,10 @@ code Main
       fileSystem = new ToyFs
       fileSystem.Init ()
 
+      -- Initialize the SerialDriver
+      serialDriver = new SerialDriver
+      serialDriver.Init ()
+
       -- Create a thread and start a user-level program running
       processManager.InitFirstProcess ()
 

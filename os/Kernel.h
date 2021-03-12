@@ -9,7 +9,7 @@ header Kernel
 
   const
 
-    INIT_NAME = "TestProgram4"
+    INIT_NAME = "TestProgram5"
 
     SYSTEM_STACK_SIZE = 1000       -- in words
     STACK_SENTINEL = 0x24242424    -- in ASCII, this is "$$$$"
@@ -23,11 +23,11 @@ header Kernel
     NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512            -- in hex: 0x0000 0200
     --NUMBER_OF_PHYSICAL_PAGE_FRAMES = 140               -- for testing only
 
-    MAX_NUMBER_OF_PROCESSES = 10
+    MAX_NUMBER_OF_PROCESSES = 20
     -- MAX_STRING_SIZE = 255
-    MAX_STRING_SIZE = 20                              -- for testing only
+    MAX_STRING_SIZE = 255                              -- for testing only
     --MAX_PAGES_PER_VIRT_SPACE = 48
-    MAX_PAGES_PER_VIRT_SPACE = 25
+    MAX_PAGES_PER_VIRT_SPACE = 48
     MAX_FILES_PER_PROCESS = 10
     MAX_NUMBER_OF_FILE_CONTROL_BLOCKS = 48
     MAX_NUMBER_OF_OPEN_FILES = 48
@@ -609,12 +609,14 @@ const
     getBufferSize: int
     getBufferNextIn: int
     getBufferNextOut: int
-    getCharacterAvail: Condition
+    getBufferFreeSem: Semaphore
+    getBufferUsedSem: Semaphore
     putBuffer: array [SERIAL_PUT_BUFFER_SIZE] of char
     putBufferSize: int
     putBufferNextIn: int
     putBufferNextOut: int
-    putBufferSem: Semaphore
+    putBufferFreeSem: Semaphore
+    putBufferUsedSem: Semaphore
     serialNeedsAttention: Semaphore
     serialHandlerThread: Thread
   methods

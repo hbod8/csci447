@@ -2004,7 +2004,9 @@ code Kernel
     -- for the duration of its execution.
     --
       currentInterruptStatus = DISABLED
-      -- NOT IMPLEMENTED
+      if serialDriver.initialized
+        serialDriver.serialNeedsAttention.Up()
+      endIf
     endFunction
 -----------------------------  IllegalInstructionHandler  --------------------------
 
@@ -2368,20 +2370,33 @@ code Kernel
 
   function Handle_Sys_Open (filename: ptr to array of char, flags, mode: int)
            returns int
-      var
-        ofilename: array [MAX_STRING_SIZE] of char
-        fd: int
-        junk: int
-      if !Valid_User_Pointer(filename asInteger, MAX_STRING_SIZE, false)
-        return -1
-      endIf
-      junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, MAX_STRING_SIZE)
+        var
+          ofilename: array [MAX_STRING_SIZE] of char
+          fd: int
+          junk: int
+        if !Valid_User_Pointer(filename asInteger, MAX_STRING_SIZE, false)
+          return -1
+        endIf
+        junk = currProc.addrSpace.CopyBytesFromVirtual((&ofilename) asInteger, filename asInteger, MAX_STRING_SIZE)
         -- call filemanager.open with isDir set to false
-        if ofilename arraySize > 20
+        if ofilename arraySize > MAX_STRING_SIZE
           currProc.error = E_Bad_Value
           return -1
         endIf
-        fd = fileManager.Open(&ofilename, flags, mode, false)
+        -- check if this is an attempt to open the serial device aka "/dev/serial"
+        if StrCmp(&ofilename, "/dev/serial") == 0
+          -- get a free FD
+          fd = Get_Open_FD(0)
+          -- make sure there was one to get
+          if fd == -1
+            currProc.error = E_No_Resource
+            return -1
+          endIf
+          -- just set the fd to point to the serial terminal file
+          currProc.fileDescriptor[fd] = &fileManager.serialTerminalFile
+        else
+          fd = fileManager.Open(&ofilename, flags, mode, false)
+        endIf
       return fd
     endFunction
 
@@ -2391,7 +2406,10 @@ code Kernel
       if !Valid_User_FD(fileDesc)
         return
       endIf
-      fileManager.Close(currProc.fileDescriptor[fileDesc])
+      if currProc.fileDescriptor[fileDesc].kind != TERMINAL
+        -- close the non-terminal
+        fileManager.Close(currProc.fileDescriptor[fileDesc])
+      endIf
       currProc.fileDescriptor[fileDesc] = null
     endFunction
 
@@ -2424,7 +2442,18 @@ code Kernel
         currProc.error = E_Permissions
         return -1
       endIf
-      return fileSystem.ReadFile(file, buffer, sizeInBytes)
+      -- pick read based on type
+      switch file.kind
+        case TERMINAL:
+          return serialDriver.Read(buffer, sizeInBytes)
+        case FILE:
+          return fileSystem.ReadFile(file, buffer, sizeInBytes)
+        case PIPE:
+          return -1
+        default:
+          FatalError("Unknown File Type in Read")
+          return -1
+      endSwitch
     endFunction
 
 -----------------------------  Handle_Sys_Write  ---------------------------------
@@ -2456,7 +2485,18 @@ code Kernel
         currProc.error = E_Permissions
         return -1
       endIf
-      return fileSystem.WriteFile(file, buffer, sizeInBytes)
+      -- check file type
+      switch file.kind
+        case TERMINAL:
+          return serialDriver.Write(buffer, sizeInBytes)
+        case FILE:
+          return fileSystem.WriteFile(file, buffer, sizeInBytes)
+        case PIPE:
+          return -1
+        default:
+          FatalError("Unknown File Type in Write")
+          return -1
+      endSwitch
    endFunction
 
 -----------------------------  Handle_Sys_Seek  ---------------------------------
@@ -4760,14 +4800,78 @@ code Kernel
 
     method Init()
         print ("Initializing Serial Driver\n")
-        -- NOT IMPLEMENTED
+        -- init mutex
+        serialLock.Init()
+        -- init semaphores for producer/consumer
+        putBufferFreeSem.Init(SERIAL_PUT_BUFFER_SIZE)
+        putBufferUsedSem.Init(0)
+        getBufferFreeSem.Init(SERIAL_GET_BUFFER_SIZE)
+        getBufferUsedSem.Init(0)
+
+        -- init semaphore for interupt
+        serialNeedsAttention.Init(0)
+
+        -- set the defuault values of the getters and setters
+        putBufferSize = 0
+        putBufferNextIn = 1
+        putBufferNextOut = 0
+        getBufferSize = 0
+        getBufferNextIn = 1
+        getBufferNextOut = 0
+
+        -- set the default pointer values
+        serial_data_word_address = SERIAL_DATA_WORD_ADDRESS asPtrTo int
+        serial_status_word_address = SERIAL_STATUS_WORD_ADDRESS asPtrTo int
+
+        -- init the serial handler thread
+        serialHandlerThread.Fork(StartSerialHandler, 0)
+
+        -- VERY LAST THING, set initialized to true
+        initialized = true
+
+        return
       endMethod
 
     ------------------- SerialDriver . Read -----------------
 
     method Read (buffer: ptr to char, sizeInBytes: int) returns int
-        -- NOT IMPLEMENTED
-        return -1
+        var
+          bytesRead, physPage, physAddr, virtPage, offset: int
+          data: char
+        -- calc
+        virtPage = (buffer asInteger) / PAGE_SIZE
+        offset = (buffer asInteger) % PAGE_SIZE
+        physPage = currProc.addrSpace.ExtractFrameAddr(virtPage)
+        currProc.addrSpace.SetDirty(virtPage)
+        currProc.addrSpace.SetReferenced(virtPage)
+        while bytesRead < sizeInBytes
+          physAddr = physPage + offset
+          data = self.GetChar()
+          if data == '\n'
+            -- return the newline
+            *(physAddr asPtrTo char) = data
+            bytesRead = bytesRead + 1
+            return bytesRead
+          elseIf data == '\r'
+            -- replace with newline and return
+            *(physAddr asPtrTo char) = '\n'
+            bytesRead = bytesRead + 1
+            return bytesRead
+          elseIf data == 0x04
+            -- return without EOF
+            return bytesRead
+          else
+            *(physAddr asPtrTo char) = data
+            bytesRead = bytesRead + 1
+          endIf
+          -- more calc
+          offset = (offset + 1) % PAGE_SIZE
+          if offset == 0
+            virtPage = virtPage + 1
+            physPage = currProc.addrSpace.ExtractFrameAddr(virtPage)
+          endIf
+        endWhile
+        return bytesRead
       endMethod
 
     ------------------- SerialDriver . Write -----------------
@@ -4781,20 +4885,92 @@ code Kernel
     ------------------- SerialDriver.PutChar -----------------
 
     method PutChar(value: char)
-        -- NOT IMPLEMENTED
+        -- PRODUCER
+        -- down on the free semaphore, meaning there is one less space in the buffer
+        putBufferFreeSem.Down()
+        -- aquire lock
+        serialLock.Lock()
+        -- add char to the buffer
+        putBuffer[putBufferNextIn] = value
+        -- increment the input index
+        putBufferNextIn = (putBufferNextIn + 1) % SERIAL_PUT_BUFFER_SIZE
+        putBufferSize = putBufferSize + 1
+        -- release lock
+        serialLock.Unlock()
+        -- up on the used semaphore
+        putBufferUsedSem.Up()
       endMethod
 
     ------------------- SerialDriver.GetChar -----------------
 
     method GetChar () returns char
-        -- NOT IMPLEMENTED
-        return '@'
+        var
+          retVal: char
+        -- CONSUMER
+        -- down on the used semaphore
+        getBufferUsedSem.Down()
+        -- aquire the lock
+        serialLock.Lock()
+        -- get the char, increment the next pos
+        retVal = getBuffer[getBufferNextOut]
+        getBufferNextOut = (getBufferNextOut + 1) % SERIAL_GET_BUFFER_SIZE
+        getBufferSize = getBufferSize - 1
+        -- release lock
+        serialLock.Unlock()
+        -- up on the free semaphore
+        getBufferFreeSem.Up()
+        return retVal
       endMethod
 
     ------------------- SerialDriver.SerialHandler -----------------
 
     method SerialHandler ()
-      -- NOT IMPLEMENTED
+--       var
+        -- incomingChar: char
+      -- infiniate loop
+      while true
+        -- wait on serial interrupt
+        serialNeedsAttention.Down()
+        -- check if there is a keypress to read
+        if (*serial_status_word_address & SERIAL_CHARACTER_AVAILABLE_BIT) != 0
+          -- aquire lock
+          serialLock.Lock()
+          -- check if there is space in the buffer
+          if getBufferSize < SERIAL_GET_BUFFER_SIZE
+            -- PRODUCER
+            -- down on the free semaphore
+            getBufferFreeSem.Down()
+            -- put the charachter
+            getBuffer[getBufferNextIn] = *serial_data_word_address
+            -- increment index and size
+            getBufferNextIn = (getBufferNextIn + 1) % SERIAL_GET_BUFFER_SIZE
+            getBufferSize = getBufferSize + 1
+            -- up on the used semaphore
+            getBufferUsedSem.Up()
+          endIf
+          -- release lock
+          serialLock.Unlock()
+        endIf
+        -- check if we can write
+        if (*serial_status_word_address & SERIAL_OUTPUT_READY_BIT) != 0
+          -- aquire lock
+          serialLock.Lock()
+          -- check if there are characters in the buffer
+          if putBufferSize > 0
+            -- CONSUMER
+            -- down on the used semaphore
+            putBufferUsedSem.Down()
+            -- write the character
+            *serial_data_word_address = putBuffer[putBufferNextOut]
+            -- increment the index and decrement the size
+            putBufferNextOut = (putBufferNextOut + 1) % SERIAL_PUT_BUFFER_SIZE
+            -- up on the free semaphore
+            putBufferFreeSem.Up()
+          endIf
+          -- release lock
+          serialLock.Unlock()
+        endIf
+      endWhile
       endMethod
 
   endBehavior
