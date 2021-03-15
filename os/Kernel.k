@@ -4801,22 +4801,32 @@ code Kernel
     method Init()
         print ("Initializing Serial Driver\n")
         -- init mutex
+        serialLock = new Mutex
         serialLock.Init()
         -- init semaphores for producer/consumer
+        putBufferFreeSem = new Semaphore
         putBufferFreeSem.Init(SERIAL_PUT_BUFFER_SIZE)
+        putBufferUsedSem = new Semaphore
         putBufferUsedSem.Init(0)
+        getBufferFreeSem = new Semaphore
         getBufferFreeSem.Init(SERIAL_GET_BUFFER_SIZE)
+        getBufferUsedSem = new Semaphore
         getBufferUsedSem.Init(0)
 
         -- init semaphore for interupt
+        serialNeedsAttention = new Semaphore
         serialNeedsAttention.Init(0)
+
+        -- init the arrays
+        putBuffer = new array of char{ SERIAL_PUT_BUFFER_SIZE of '\0' }
+        getBuffer = new array of char{ SERIAL_GET_BUFFER_SIZE of '\0' }
 
         -- set the defuault values of the getters and setters
         putBufferSize = 0
-        putBufferNextIn = 1
+        putBufferNextIn = 0
         putBufferNextOut = 0
         getBufferSize = 0
-        getBufferNextIn = 1
+        getBufferNextIn = 0
         getBufferNextOut = 0
 
         -- set the default pointer values
@@ -4824,6 +4834,8 @@ code Kernel
         serial_status_word_address = SERIAL_STATUS_WORD_ADDRESS asPtrTo int
 
         -- init the serial handler thread
+        serialHandlerThread = new Thread
+        serialHandlerThread.Init("serial handler thread")
         serialHandlerThread.Fork(StartSerialHandler, 0)
 
         -- VERY LAST THING, set initialized to true
@@ -4877,19 +4889,48 @@ code Kernel
     ------------------- SerialDriver . Write -----------------
 
     method Write (buffer: ptr to char, sizeInBytes: int) returns int
-        -- NOT IMPLEMENTED
-        return -1
+        var
+          bytesWritten, physPage, physAddr, virtPage, offset: int
+          data: char
+        -- calc
+        virtPage = (buffer asInteger) / PAGE_SIZE
+        offset = (buffer asInteger) % PAGE_SIZE
+        physPage = currProc.addrSpace.ExtractFrameAddr(virtPage)
+        while bytesWritten < sizeInBytes
+          physAddr = physPage + offset
+          data = *(physAddr asPtrTo char)
+          if data == '\n'
+            -- write a carrige return
+            self.PutChar('\r')
+          endIf
+          self.PutChar(data)
+          bytesWritten = bytesWritten + 1
+          -- more calc
+          offset = (offset + 1) % PAGE_SIZE
+          if offset == 0
+            virtPage = virtPage + 1
+            physPage = currProc.addrSpace.ExtractFrameAddr(virtPage)
+          endIf
+        endWhile
+        return bytesWritten
       endMethod
 
 
     ------------------- SerialDriver.PutChar -----------------
 
     method PutChar(value: char)
+        var i: int
         -- PRODUCER
         -- down on the free semaphore, meaning there is one less space in the buffer
         putBufferFreeSem.Down()
         -- aquire lock
         serialLock.Lock()
+        -- print some debug info
+        print("\tPutChar envoked. nextIn = ") printInt(putBufferNextIn) print(" nextOut = ") printInt(putBufferNextOut) nl()
+        for i = 0 to SERIAL_PUT_BUFFER_SIZE - 1
+          printInt(i) print(":") printHex(putBuffer[i]) print(" ")
+        endFor
+        nl()
         -- add char to the buffer
         putBuffer[putBufferNextIn] = value
         -- increment the input index
@@ -4906,11 +4947,18 @@ code Kernel
     method GetChar () returns char
         var
           retVal: char
+          i: int
         -- CONSUMER
         -- down on the used semaphore
         getBufferUsedSem.Down()
         -- aquire the lock
         serialLock.Lock()
+        -- print some debug info
+        print("\tGetChar envoked. nextIn = ") printInt(getBufferNextIn) print(" nextOut = ") printInt(getBufferNextOut) nl()
+        for i = 0 to SERIAL_GET_BUFFER_SIZE - 1
+          printInt(i) print(":") printHex(getBuffer[i]) print(" ")
+        endFor
+        nl()
         -- get the char, increment the next pos
         retVal = getBuffer[getBufferNextOut]
         getBufferNextOut = (getBufferNextOut + 1) % SERIAL_GET_BUFFER_SIZE
@@ -4925,14 +4973,14 @@ code Kernel
     ------------------- SerialDriver.SerialHandler -----------------
 
     method SerialHandler ()
---       var
-        -- incomingChar: char
+    var i: int
       -- infiniate loop
       while true
         -- wait on serial interrupt
         serialNeedsAttention.Down()
         -- check if there is a keypress to read
         if (*serial_status_word_address & SERIAL_CHARACTER_AVAILABLE_BIT) != 0
+          print("***** detected char to read\n")
           -- aquire lock
           serialLock.Lock()
           -- check if there is space in the buffer
@@ -4941,12 +4989,16 @@ code Kernel
             -- down on the free semaphore
             getBufferFreeSem.Down()
             -- put the charachter
-            getBuffer[getBufferNextIn] = *serial_data_word_address
+            i = (*serial_data_word_address)
+            i = i << 24
+            getBuffer[getBufferNextIn] = *((&i) asPtrTo char)
             -- increment index and size
             getBufferNextIn = (getBufferNextIn + 1) % SERIAL_GET_BUFFER_SIZE
             getBufferSize = getBufferSize + 1
             -- up on the used semaphore
             getBufferUsedSem.Up()
+          else
+            print("***** Read buffer overflow. *****\n")
           endIf
           -- release lock
           serialLock.Unlock()
@@ -4964,6 +5016,7 @@ code Kernel
             *serial_data_word_address = putBuffer[putBufferNextOut]
             -- increment the index and decrement the size
             putBufferNextOut = (putBufferNextOut + 1) % SERIAL_PUT_BUFFER_SIZE
+            putBufferSize = putBufferSize - 1
             -- up on the free semaphore
             putBufferFreeSem.Up()
           endIf
