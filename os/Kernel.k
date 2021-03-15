@@ -4919,18 +4919,18 @@ code Kernel
     ------------------- SerialDriver.PutChar -----------------
 
     method PutChar(value: char)
-        var i: int
+        -- var i: int
         -- PRODUCER
         -- down on the free semaphore, meaning there is one less space in the buffer
         putBufferFreeSem.Down()
         -- aquire lock
         serialLock.Lock()
         -- print some debug info
-        print("\tPutChar envoked. nextIn = ") printInt(putBufferNextIn) print(" nextOut = ") printInt(putBufferNextOut) nl()
-        for i = 0 to SERIAL_PUT_BUFFER_SIZE - 1
-          printInt(i) print(":") printHex(putBuffer[i]) print(" ")
-        endFor
-        nl()
+        -- print("\tPutChar envoked. nextIn = ") printInt(putBufferNextIn) print(" nextOut = ") printInt(putBufferNextOut) nl()
+        -- for i = 0 to SERIAL_PUT_BUFFER_SIZE - 1
+        --   printInt(i) print(":") printHex(putBuffer[i]) print(" ")
+        -- endFor
+        -- nl()
         -- add char to the buffer
         putBuffer[putBufferNextIn] = value
         -- increment the input index
@@ -4947,18 +4947,18 @@ code Kernel
     method GetChar () returns char
         var
           retVal: char
-          i: int
+        --   i: int
         -- CONSUMER
         -- down on the used semaphore
         getBufferUsedSem.Down()
         -- aquire the lock
         serialLock.Lock()
         -- print some debug info
-        print("\tGetChar envoked. nextIn = ") printInt(getBufferNextIn) print(" nextOut = ") printInt(getBufferNextOut) nl()
-        for i = 0 to SERIAL_GET_BUFFER_SIZE - 1
-          printInt(i) print(":") printHex(getBuffer[i]) print(" ")
-        endFor
-        nl()
+        -- print("\tGetChar envoked. nextIn = ") printInt(getBufferNextIn) print(" nextOut = ") printInt(getBufferNextOut) nl()
+        -- for i = 0 to SERIAL_GET_BUFFER_SIZE - 1
+        --   printInt(i) print(":") printHex(getBuffer[i]) print(" ")
+        -- endFor
+        -- nl()
         -- get the char, increment the next pos
         retVal = getBuffer[getBufferNextOut]
         getBufferNextOut = (getBufferNextOut + 1) % SERIAL_GET_BUFFER_SIZE
@@ -4980,7 +4980,7 @@ code Kernel
         serialNeedsAttention.Down()
         -- check if there is a keypress to read
         if (*serial_status_word_address & SERIAL_CHARACTER_AVAILABLE_BIT) != 0
-          print("***** detected char to read\n")
+          -- print("***** detected char to read\n")
           -- aquire lock
           serialLock.Lock()
           -- check if there is space in the buffer
