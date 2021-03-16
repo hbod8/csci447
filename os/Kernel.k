@@ -2981,16 +2981,35 @@ code Kernel
 
       ----------  FileManager . Pipe  ----------
       method  Pipe (fdArray: ptr to array of int) returns int
-           -- NOT IMPLEMENTED
-         return -1
-
+        var
+          fd1, fd1 : int
+        -- get two FDs
+        fd1 = Get_Open_FD(0)
+        fd2 = Get_Open_FD(0)
+        -- check if there was free fds
+        if fd1 == -1 || fd2 == -1
+          currProc.error = E_No_Resource
+          return -1
+        endIf
+        -- get the open file objects
+        -- get the availible pipe object
+        -- create the array to return
+        -- copy it to the user space
+        return -1
         endMethod
 
       ----------  FileManager . GetAPipe  ----------
 
       method GetAPipe () returns ptr to Pipe
-          -- NOT IMPLEMENTED
+        -- get lock
+        fileManagerLock.Lock()
+        if pipeList.IsEmpty()
+          currProc.error = E_No_Resource
           return null
+        endIf
+        -- release lock
+        fileManagerLock.Unlock()
+        return null
         endMethod
 
       ----------  FileManager . PutAPipe  ----------
