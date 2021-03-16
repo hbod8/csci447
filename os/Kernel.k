@@ -3001,6 +3001,8 @@ code Kernel
       ----------  FileManager . GetAPipe  ----------
 
       method GetAPipe () returns ptr to Pipe
+        var
+          open1, open2 : ptr to OpenFile
         -- get lock
         fileManagerLock.Lock()
         if pipeList.IsEmpty()
