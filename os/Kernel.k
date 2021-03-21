@@ -2409,19 +2409,22 @@ code Kernel
         return
       endIf
       file = currProc.fileDescriptor[fileDesc]
-      switch file.kind
-        case TERMINAL:
-          break
-        case FILE:
-          fileManager.Close(file)
-          break
-        case PIPE:
-          fileManager.Close(file)
-          break
-        default:
-          FatalError("Unknown File Type in Read")
-          return
-      endSwitch
+      if file.kind != TERMINAL
+        fileManager.Close(file)
+      endIf
+--       switch file.kind
+--         case TERMINAL:
+--           break
+--         case FILE:
+--           fileManager.Close(file)
+--           break
+--         case PIPE:
+--           fileManager.Close(file)
+--           break
+--         default:
+--           FatalError("Unknown File Type in Read")
+--           return
+--       endSwitch
       currProc.fileDescriptor[fileDesc] = null
     endFunction
 
@@ -3005,7 +3008,7 @@ code Kernel
           status : bool
         -- get two FDs
         fd1 = Get_Open_FD(0)
-        fd2 = Get_Open_FD(0)
+        fd2 = Get_Open_FD(fd1 + 1)
         -- check if there was free fds
         if fd1 == -1 || fd2 == -1
           currProc.error = E_No_Resource
@@ -3017,8 +3020,10 @@ code Kernel
         -- set them up
         ofread.kind = PIPE
         ofread.flags = O_READ
+        ofread.numberOfUsers = 1
         ofwrite.kind = PIPE
         ofwrite.flags = O_WRITE
+        ofwrite.numberOfUsers = 1
         -- get the availible pipe object
         pipe = fileManager.GetAPipe()
         if pipe == null
@@ -5158,6 +5163,7 @@ code Kernel
           junk : int
         pipeMutex.Lock()
         while charsInPipe == 0 && numberOfUsers > 1
+        --   print("wait\n")
           readQueue.Wait(&pipeMutex)
         endWhile
         while charsInPipe > 0
@@ -5167,6 +5173,7 @@ code Kernel
             -- signal the read queue because there is still data in the buffer
             readQueue.Signal(&pipeMutex)
             pipeMutex.Unlock()
+        --     print("stopping : read max\n")
 	    return bytesRead
           endIf
           -- copy one byte into the virtual address space
@@ -5175,9 +5182,16 @@ code Kernel
           bytesRead = bytesRead + 1
           charsInPipe = charsInPipe - 1
         endWhile
+        if numberOfUsers < 2
+          readQueue.Signal(&pipeMutex)
+          pipeMutex.Unlock()
+        --   print("stopping : closed and no bytes\n")
+          return bytesRead
+        endIf
         -- only signal the writers because there is nothing to read
         writeQueue.Signal(&pipeMutex)
         pipeMutex.Unlock()
+        -- print("stopping : no bytes\n")
 	return bytesRead
       endMethod
 
@@ -5186,18 +5200,32 @@ code Kernel
         var
           bytesWritten : int = 0
           junk : int
+        if numberOfUsers < 2
+          currProc.error = E_No_Reader
+          return -1
+        endIf
         pipeMutex.Lock()
-        while charsInPipe == PAGE_SIZE
+        while charsInPipe >= PAGE_SIZE && numberOfUsers > 1
           writeQueue.Wait(&pipeMutex)
         endWhile
+        if numberOfUsers < 2
+          writeQueue.Signal(&pipeMutex)
+          pipeMutex.Unlock()
+          return bytesWritten
+        endIf
         while bytesWritten < sizeInBytes
           if charsInPipe >= PAGE_SIZE
             -- signal the read queue now that there is space
             readQueue.Signal(&pipeMutex)
             -- wait for the next reader to compleate
-            while charsInPipe >= PAGE_SIZE
+            while charsInPipe >= PAGE_SIZE && numberOfUsers > 1
               writeQueue.Wait(&pipeMutex)
             endWhile
+            if numberOfUsers < 2
+              writeQueue.Signal(&pipeMutex)
+              pipeMutex.Unlock()
+              return bytesWritten
+            endIf
           endIf
           -- copy one byte into the pipe
           junk = currProc.addrSpace.CopyBytesFromVirtual(bufferFrame + tail, (buffer asInteger) + bytesWritten, 1)
@@ -5210,20 +5238,25 @@ code Kernel
         -- also signal the writers now that we're complete
         writeQueue.Signal(&pipeMutex)
         pipeMutex.Unlock()
-	return 0
+	return bytesWritten
       endMethod
 
     -------------------  Pipe . Close  -----------------
     ---- Assumes fileManagerLock is locked.
     method Close ()
+        pipeMutex.Lock()
         if numberOfUsers > 1
+        --   print("******** CLOSING PIPE **********\n")
           numberOfUsers = numberOfUsers - 1
           -- signal all waiting threads
+          readQueue.Signal(&pipeMutex)
+          writeQueue.Signal(&pipeMutex)
         else
           numberOfUsers = numberOfUsers - 1
           -- return the frame and set it to -1
           frameManager.PutAFrame(bufferFrame)
         endIf
+        pipeMutex.Unlock()
       endMethod
 
   endBehavior
