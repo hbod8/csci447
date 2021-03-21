@@ -1,0 +1,714 @@
+Script started on 2021-03-21 00:45:15-07:00 [TERM="xterm-256color" TTY="/dev/pts/2" COLUMNS="252" LINES="61"]
+]0;harry@winslow: ~/csci447/csci447_w21[01;32mharry@winslow[00m:[01;34m~/csci447/csci447_w21[00m$ cd os
+]0;harry@winslow: ~/csci447/csci447_w21/os[01;32mharry@winslow[00m:[01;34m~/csci447/csci447_w21/os[00m$ make
+asm Runtime.s
+asm Switch.s
+kpl System -unsafe
+asm System.s
+kpl List -unsafe
+asm List.s
+kpl BitMap -unsafe
+asm BitMap.s
+kpl Kernel -unsafe
+asm Kernel.s
+kpl Main -unsafe
+asm Main.s
+kpl Syscall
+asm Syscall.s
+lddd Runtime.o Switch.o System.o List.o BitMap.o Kernel.o Main.o Syscall.o -o os
+asm UserRuntime.s
+kpl -unsafe $(basename UserSystem.k .k)
+asm UserSystem.s
+kpl -unsafe $(basename MyProgram.k .k)
+asm MyProgram.s
+lddd UserRuntime.o UserSystem.o MyProgram.o Syscall.o -o MyProgram
+kpl -unsafe $(basename TestProgram1.k .k)
+asm TestProgram1.s
+lddd UserRuntime.o UserSystem.o TestProgram1.o Syscall.o -o TestProgram1
+kpl TestProgram2 -unsafe
+asm TestProgram2.s
+lddd UserRuntime.o UserSystem.o TestProgram2.o Syscall.o -o TestProgram2
+kpl TestProgram3 -unsafe
+asm TestProgram3.s
+lddd UserRuntime.o UserSystem.o TestProgram3.o Syscall.o -o TestProgram3
+kpl TestProgram3a -unsafe
+asm TestProgram3a.s
+lddd UserRuntime.o UserSystem.o TestProgram3a.o Syscall.o -o TestProgram3a
+kpl TestProgram4 -unsafe
+asm TestProgram4.s
+lddd UserRuntime.o UserSystem.o TestProgram4.o Syscall.o -o TestProgram4
+kpl -unsafe $(basename TestProgram5.k .k)
+asm TestProgram5.s
+kpl -unsafe $(basename UserLib.k .k)
+asm UserLib.s
+lddd UserRuntime.o UserSystem.o TestProgram5.o UserLib.o Syscall.o -o TestProgram5
+kpl Program1
+asm Program1.s
+lddd UserRuntime.o UserSystem.o Program1.o Syscall.o -o Program1
+kpl Program2 -unsafe
+asm Program2.s
+lddd UserRuntime.o UserSystem.o Program2.o Syscall.o -o Program2
+kpl TestProgram4a
+asm TestProgram4a.s
+lddd UserRuntime.o UserSystem.o TestProgram4a.o Syscall.o -o TestProgram4a
+kpl -unsafe $(basename Environ.k .k)
+asm Environ.s
+kpl -unsafe $(basename sh.k .k)
+asm sh.s
+lddd -o sh sh.o UserLib.o UserSystem.o UserRuntime.o Syscall.o Environ.o
+kpl -unsafe $(basename cat.k .k)
+asm cat.s
+lddd -o cat cat.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename hello.k .k)
+asm hello.s
+lddd -o hello hello.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename ls.k .k)
+asm ls.s
+lddd -o ls ls.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename grep.k .k)
+asm grep.s
+lddd -o grep grep.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename wc.k .k)
+asm wc.s
+lddd -o wc wc.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename echoargs.k .k)
+asm echoargs.s
+lddd -o echoargs echoargs.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename ln.k .k)
+asm ln.s
+lddd -o ln ln.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename mkdir.k .k)
+asm mkdir.s
+lddd -o mkdir mkdir.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename rm.k .k)
+asm rm.s
+lddd -o rm rm.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename rmdir.k .k)
+asm rmdir.s
+lddd -o rmdir rmdir.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename cp.k .k)
+asm cp.s
+lddd -o cp cp.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename du.k .k)
+asm du.s
+lddd -o du du.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename tee.k .k)
+asm tee.s
+lddd -o tee tee.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename pwd.k .k)
+asm pwd.s
+lddd -o pwd pwd.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename more.k .k)
+asm more.s
+lddd -o more more.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename expr.k .k)
+asm expr.s
+lddd -o expr expr.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename setexit.k .k)
+asm setexit.s
+lddd -o setexit setexit.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename chmode.k .k)
+asm chmode.s
+lddd -o chmode chmode.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename shutdown.k .k)
+asm shutdown.s
+lddd -o shutdown shutdown.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename script.k .k)
+asm script.s
+lddd -o script script.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename test.k .k)
+asm test.s
+lddd -o test test.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename exn.k .k)
+asm exn.s
+lddd -o exn exn.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename stat.k .k)
+asm stat.s
+lddd -o stat stat.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+kpl -unsafe $(basename df.k .k)
+asm df.s
+lddd -o df df.o UserLib.o UserSystem.o UserRuntime.o Syscall.o
+rm -f DISK
+toyfs -i -n10 -s700
+Creating a new Toy File system named DISK:
+    128 inodes, 700 sectors
+toyfs -m /bin
+toyfs -a -x MyProgram TestProgram1 TestProgram2 /
+toyfs -a -x TestProgram3 TestProgram3a /
+toyfs -a -x TestProgram4 Program1 Program2 TestProgram5 /
+toyfs -a TestProgram4a /
+toyfs -a file1 file2 file3 file1234abcd /
+toyfs -a FileWithVeryLongName012345678901234567890123456789 /
+toyfs -a MyProgram xProg 
+toyfs -a fileA fileB fileC fileD help script.sh /
+toyfs -a TestProgram5.k /
+toyfs -a -x sh cat hello ls grep wc echoargs ln mkdir rm rmdir cp du tee pwd more expr setexit chmode shutdown script test exn stat df /bin
+for f in sh cat hello ls grep wc echoargs ln mkdir rm rmdir cp du tee pwd more expr setexit chmode shutdown script test exn stat df; do toyfs -c 5 /bin/$f ; done
+toyfs -m /testdir
+toyfs -m /testdir/subdir
+toyfs -a primes.txt test-script test-447 test-output grep-output file-out /testdir
+rm stat.s chmode.s cp.s setexit.s hello.s cat.s tee.s expr.s ls.s rm.s pwd.s df.s wc.s more.s UserLib.s mkdir.s ln.s rmdir.s du.s grep.s script.s echoargs.s exn.s test.s Environ.s shutdown.s
+]0;harry@winslow: ~/csci447/csci447_w21/os[01;32mharry@winslow[00m:[01;34m~/csci447/csci447_w21/os[00m$ bi[Klitz -g -raw -wait os
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+Initializing Serial Driver
+Opening 'stdin' and 'stdout'...
+Okay.
+Okay.
+This menu works best in raw mode.
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 1
+
+==========  BasicSerialTest  ==========
+
+This test should be run in raw mode.
+
+Hit the "a" key.  Do not hit ENTER or RETURN...
+Returned value is correct.
+The buffer was updated correctly.
+
+Please type "abc".  Do not hit ENTER or RETURN...
+Returned value is correct.
+The buffer was updated correctly.
+
+Please type "hello".  Do not hit ENTER or RETURN...
+Returned value is correct.
+Returned value is correct.
+The buffer was updated correctly.
+
+Please type control-J.  Do not hit ENTER or RETURN...
+Returned value is correct.
+The buffer was updated correctly.
+
+Please type control-M.  Do not hit ENTER or RETURN...
+Returned value is correct.
+The buffer was updated correctly.
+
+Please type control-H.  Do not hit ENTER or RETURN...
+Returned value is correct.
+The buffer was updated correctly.
+
+Please type control-D.  Do not hit ENTER or RETURN...
+Returned value is correct.
+The buffer was not modified, as expected.
+
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 2
+
+==========  KeyTest  ==========
+
+This test waits for a single character and then prints the value of that character.
+
+  1. Start by typing "abcABC123"
+  2. See what happens with characters like cntl-H (Backspace), cntl-J (NL) and cntl-M (CR).
+  3. See what happens when you hit keys labelled SPACE, ENTER/RETURN, TAB, DEL/BACKSPACE, ARROW KEYS and ESC.
+  4. See what happens when you hit cntl-D (EOF).
+  5. Try this test in cooked mode and in raw mode.
+
+This test will terminate when 'q' is typed.
+
+(To change to cooked mode, type control-C, "cooked", and "g" to resume execution.
+To change to raw mode, type control-C, ENTER, ENTER, "raw", and "g" to resume execution.)
+
+ch = 0x00000061 (decimal 97)
+ch = 0x00000062 (decimal 98)
+ch = 0x00000063 (decimal 99)
+ch = 0x00000041 (decimal 65)
+ch = 0x00000042 (decimal 66)
+ch = 0x00000043 (decimal 67)
+ch = 0x00000031 (decimal 49)
+ch = 0x00000032 (decimal 50)
+ch = 0x00000033 (decimal 51)
+ch = 0x00000008 (decimal 8)
+ch = 0x0000000A (decimal 10)
+ch = 0x0000000A (decimal 10)
+ch = 0x00000020 (decimal 32)
+ch = 0x0000000A (decimal 10)
+ch = 0x00000009 (decimal 9)
+ch = 0x0000001B (decimal 27)
+ch = 0x0000005B (decimal 91)
+ch = 0x00000033 (decimal 51)
+ch = 0x0000007E (decimal 126)
+ch = 0x0000007F (decimal 127)
+ch = 0x0000001B (decimal 27)
+ch = 0x0000005B (decimal 91)
+ch = 0x00000044 (decimal 68)
+ch = 0x0000001B (decimal 27)
+ch = 0x0000005B (decimal 91)
+ch = 0x00000041 (decimal 65)
+ch = 0x0000001B (decimal 27)
+ch = 0x0000005B (decimal 91)
+ch = 0x00000042 (decimal 66)
+ch = 0x0000001B (decimal 27)
+ch = 0x0000005B (decimal 91)
+ch = 0x00000043 (decimal 67)
+
+*****  WARNING: Returned value from Read is zero; This should only occur when control-D is typed
+ch = 0x00000074 (decimal 116)
+ch = 0x00000068 (decimal 104)
+ch = 0x00000061 (decimal 97)
+ch = 0x00000074 (decimal 116)
+ch = 0x00000020 (decimal 32)
+ch = 0x00000077 (decimal 119)
+ch = 0x00000061 (decimal 97)
+ch = 0x00000073 (decimal 115)
+ch = 0x00000020 (decimal 32)
+ch = 0x00000065 (decimal 101)
+ch = 0x0000006F (decimal 111)
+ch = 0x00000066 (decimal 102)
+ch = 0x00000071 (decimal 113)
+
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 3
+
+==========  EchoTest  ==========
+
+This test reads characters from the terminal.  It echoes each character, as it is received.
+
+  1. Start by typing "abc\n"
+  2. See what happens with characters like cntl-H (Backspace), cntl-J (NL) and cntl-M (CR).
+  3. See what happens when you hit keys labelled SPACE, ENTER/RETURN, TAB, DEL/BACKSPACE, and ESC.
+  4. See what happens when you hit cntl-D (EOF).
+  5. Try this test in cooked mode and in raw mode.
+  6. While in raw mode, see what happens with sequences from page 342 in the textbook.
+     For example, try typing these sequences:
+         ESC  [  7  m
+         ESC  [  5  A
+         control-g
+         up-arrow
+
+This test will terminate when 'q' is typed.
+
+(To change to cooked mode, type control-C, "cooked", and "g" to resume execution.
+To change to raw mode, type control-C, ENTER, ENTER, "raw", and "g" to resume execution.)
+
+this is like typing in vim,
+except I dont have to ty
+to press i or a
+i could write an entire novel in this command prompt
+q
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 4
+
+==========  LineEchoTest  ==========
+
+This program reads an entire line of input (up to 30 characters) into a buffer.
+After this program gets the entire line, it prints it.  Since this program
+does not echo characters as typed, you will not see the characters until after
+the entire line is completed by typing ENTER, when running the emulator in raw
+mode.  In cooked mode, the host (Unix) will echo characters and then, after the
+line is complete, this program will (re) print the line.
+
+  1. Start by typing "abc\n"
+  2. See what happens with characters like cntl-H (Backspace), cntl-J (NL) and cntl-M (CR).
+  3. See what happens when you hit keys labelled SPACE, ENTER/RETURN, TAB, DEL/BACKSPACE, and ESC.
+  4. See what happens when you hit cntl-D (EOF).
+  5. See what happens when the size of the buffer is exceeded.
+  6. In cooked mode, see how the host (Unix) processes editing keys, such as backspace.
+
+This test will terminate when the first character entered is 'q'.
+
+(To change to cooked mode, type control-C, "cooked", and "g" to resume execution.
+To change to raw mode, type control-C, ENTER, ENTER, "raw", and "g" to resume execution.)
+
+
+Number of characters entered = 23
+this is a line of text
+
+Number of characters entered = 4
+abc
+
+Number of characters entered = 30
+woah this is a really ling lin
+Number of characters entered = 30
+e taht is way too long to fit 
+Number of characters entered = 14
+in the buffer
+
+Number of characters entered = 6
+line
+
+Number of characters entered = 19
+line backspace
+
+Number of characters entered = 20
+line with a newline
+
+Number of characters entered = 15
+line with a cr
+
+Number of characters entered = 2
+q
+
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 5
+
+==========  EOFTest  ==========
+
+This test should be run in 'raw' mode.
+
+This function tests the handling of control-D.  Control-D is the
+enf-of-file character.  When typed, it should cause an immediate
+return from the Read syscall.  If no other characters have been
+typed first, then the count returned from Read will be zero, which
+many programs will interpret as 'end-of-file'.
+
+Please hit control-D next.  The ENTER key should not be necessary...
+Okay.
+Please type "abc" followed by control-D.  The ENTER key should not be necessary...
+Okay.
+**********  ERROR: buffer is incorrect  *************
+
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: q
+Syscall 'Shutdown' was invoked by a user thread
+
+====================  KPL PROGRAM TERMINATION  ====================
+
+****  A 'debug' instruction was encountered  *****
+Done!  The next instruction to execute will be:
+0010A8: C0100000       sethi   0x0000,r1	! 0x000010B8 = 4280 (noGoMessage)
+
+Entering machine-level debugger...
+======================================================
+=====                                            =====
+=====         The BLITZ Machine Emulator         =====
+=====                                            =====
+=====  Copyright 2001-2007, Harry H. Porter III  =====
+=====                                            =====
+======================================================
+
+Enter a command at the prompt.  Type 'quit' to exit or 'help' for
+info about commands.
+> ^[[A    q
+Number of Disk Reads    = 22
+Number of Disk Writes   = 0
+Instructions Executed   = 21522845
+Time Spent Sleeping     = 56359
+    Total Elapsed Time  = 21579204
+]0;harry@winslow: ~/csci447/csci447_w21/os[01;32mharry@winslow[00m:[01;34m~/csci447/csci447_w21/os[00m$ blitz -g -raw -wait os
+Beginning execution...
+====================  KPL PROGRAM STARTING  ====================
+Initializing Thread Scheduler...
+Initializing Process Manager...
+Initializing Thread Manager...
+Initializing Frame Manager...
+AllocateRandomFrames called.  NUMBER_OF_PHYSICAL_PAGE_FRAMES = 512
+Initializing Disk Driver...
+Initializing File Manager...
+Initializing Serial Driver
+Opening 'stdin' and 'stdout'...
+Okay.
+Okay.
+This menu works best in raw mode.
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 5
+
+==========  EOFTest  ==========
+
+This test should be run in 'raw' mode.
+
+This function tests the handling of control-D.  Control-D is the
+enf-of-file character.  When typed, it should cause an immediate
+return from the Read syscall.  If no other characters have been
+typed first, then the count returned from Read will be zero, which
+many programs will interpret as 'end-of-file'.
+
+Please hit control-D next.  The ENTER key should not be necessary...
+Okay.
+Please type "abc" followed by control-D.  The ENTER key should not be necessary...
+Okay.
+
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 6
+
+==========  OpenCloseTerminalTest  ==========
+
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Closing all 10 fileDescriptors...
+Opening '/dev/serial' 10 times...
+Attempting to open '/dev/serial' one more time, which should fail.
+The syscall correctly returns -1.
+Closing all 10 fileDescriptors...
+
+==========  Test Complete  ==========
+
+Okay.
+Okay.
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: 7
+
+==========  TerminalErrorTest  ==========
+
+(This test should be run in cooked mode.)
+Opening '/dev/serial' file...
+Reading with negative sizeInBytes...
+Okay.
+Okay.
+Reading with negative sizeInBytes...
+Okay.
+Okay.
+Reading with a pointer to a page which is read-only, which should be an error...
+Please type "abc\n" next.
+Okay.
+Reading with a pointer which isn't in our address space, which should be an error...
+Please type "xyz\n" next.
+Okay.
+Reading with a pointer which is near the end of our address space...
+Please type "123456\n" next.
+Okay.
+Reading with a pointer that crosses a page boundary...
+Please type "abcdef\n" next.
+Okay.
+Writing with negative sizeInBytes...
+Okay.
+Okay.
+Writing with negative sizeInBytes...
+Okay.
+Okay.
+Writing with a pointer that crosses a page boundary...
+
+
+==== This should print "GREETINGS" next ====
+                        GREETINGS
+Okay.
+Writing with a pointer to a page which is read-only, which should be okay...
+
+
+==== This should print "KERNEL CODE" next ====
+                        KERNEL CODE
+
+Writing with a pointer which isn't in our address space, which should be an error...
+Okay.
+Okay.
+
+==========  Test Complete  ==========
+
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: p
+Preparing pipe tests....
+Okay.
+Okay.
+code TestPr
+Pipe test one...
+Okay.
+Okay.
+Okay.
+Okay.
+Pipe test two...(may hang if you have a bug.)
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Pipe test three ... this may also hang
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Pipe test four ... this may also hang
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+****** Checking Errors *****
+Okay.
+Okay.
+Okay.
+Okay.
+Okay.
+Done with pipe tests.
+====================  MENU  ====================
+  1  -  BasicSerialTest
+  2  -  KeyTest
+  3  -  EchoTest
+  4  -  LineEchoTest
+  5  -  EOFTest
+  6  -  OpenCloseTerminalTest
+  7  -  TerminalErrorTest
+  d  -  Test the Dup system call
+  p  -  Test the Pipe system call
+  s  -  Shell
+  q  -  Quit
+Please select by number: q
+Syscall 'Shutdown' was invoked by a user thread
+
+====================  KPL PROGRAM TERMINATION  ====================
+
+****  A 'debug' instruction was encountered  *****
+Done!  The next instruction to execute will be:
+0010A8: C0100000       sethi   0x0000,r1	! 0x000010B8 = 4280 (noGoMessage)
+
+Entering machine-level debugger...
+======================================================
+=====                                            =====
+=====         The BLITZ Machine Emulator         =====
+=====                                            =====
+=====  Copyright 2001-2007, Harry H. Porter III  =====
+=====                                            =====
+======================================================
+
+Enter a command at the prompt.  Type 'quit' to exit or 'help' for
+info about commands.
+> q
+Number of Disk Reads    = 24
+Number of Disk Writes   = 0
+Instructions Executed   = 138216952
+Time Spent Sleeping     = 75584
+    Total Elapsed Time  = 138292536
+]0;harry@winslow: ~/csci447/csci447_w21/os[01;32mharry@winslow[00m:[01;34m~/csci447/csci447_w21/os[00m$ exit
+exit
+
+Script done on 2021-03-21 00:51:14-07:00 [COMMAND_EXIT_CODE="0"]
