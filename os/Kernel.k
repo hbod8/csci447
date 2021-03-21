@@ -2403,13 +2403,25 @@ code Kernel
 -----------------------------  Handle_Sys_Close  --------------------------------
 
   function Handle_Sys_Close (fileDesc: int)
+      var
+        file : ptr to OpenFile
       if !Valid_User_FD(fileDesc)
         return
       endIf
-      if currProc.fileDescriptor[fileDesc].kind != TERMINAL
-        -- close the non-terminal
-        fileManager.Close(currProc.fileDescriptor[fileDesc])
-      endIf
+      file = currProc.fileDescriptor[fileDesc]
+      switch file.kind
+        case TERMINAL:
+          break
+        case FILE:
+          fileManager.Close(file)
+          break
+        case PIPE:
+          fileManager.Close(file)
+          break
+        default:
+          FatalError("Unknown File Type in Read")
+          return
+      endSwitch
       currProc.fileDescriptor[fileDesc] = null
     endFunction
 
@@ -2449,7 +2461,7 @@ code Kernel
         case FILE:
           return fileSystem.ReadFile(file, buffer, sizeInBytes)
         case PIPE:
-          return -1
+          return file.pipePtr.Read(buffer, sizeInBytes)
         default:
           FatalError("Unknown File Type in Read")
           return -1
@@ -2492,7 +2504,7 @@ code Kernel
         case FILE:
           return fileSystem.WriteFile(file, buffer, sizeInBytes)
         case PIPE:
-          return -1
+          return file.pipePtr.Write(buffer, sizeInBytes)
         default:
           FatalError("Unknown File Type in Write")
           return -1
@@ -2511,9 +2523,10 @@ code Kernel
 -----------------------------  Handle_Sys_Pipe  ------------------------------
  
   function Handle_Sys_Pipe (fdArray: ptr to array of int) returns int
-      -- NOT IMPLEMENTED
-      currProc.error = E_Not_Imp
-      return -1
+      if !Valid_User_Pointer(fdArray asInteger, 12, true)
+        return -1
+      endIf
+      return fileManager.Pipe(fdArray)
     endFunction
 
 -----------------------------  Handle_Sys_Dup  ------------------------------
@@ -2875,7 +2888,7 @@ code Kernel
           fileManagerLock.Unlock ()
         endMethod
 
-      ----------  FileMangger . GetAnOpenFile --------
+      ----------  FileManager . GetAnOpenFile --------
       
       method GetAnOpenFile (block: bool) returns ptr to OpenFile
         var open: ptr to OpenFile
@@ -2973,6 +2986,9 @@ code Kernel
                fcb.Release()
 	    endIf
 	    -- Deal with closing a pipe -- NOT IMPLEMENTED
+            if open.kind == PIPE
+              open.pipePtr.Close()
+            endIf
             openFileFreeList.AddToEnd (open)
             anOpenFileBecameFree.Signal (& fileManagerLock)
            endIf
@@ -2982,7 +2998,11 @@ code Kernel
       ----------  FileManager . Pipe  ----------
       method  Pipe (fdArray: ptr to array of int) returns int
         var
-          fd1, fd1 : int
+          fd1, fd2, junk : int
+          ofread, ofwrite : ptr to OpenFile
+          pipe : ptr to Pipe
+          newFdArray : array [2] of int = new array of int { 2 of -1 }
+          status : bool
         -- get two FDs
         fd1 = Get_Open_FD(0)
         fd2 = Get_Open_FD(0)
@@ -2991,33 +3011,61 @@ code Kernel
           currProc.error = E_No_Resource
           return -1
         endIf
-        -- get the open file objects
+        -- get the open file objects, one read, one write
+        ofread = fileManager.GetAnOpenFile(true)
+        ofwrite = fileManager.GetAnOpenFile(true)
+        -- set them up
+        ofread.kind = PIPE
+        ofread.flags = O_READ
+        ofwrite.kind = PIPE
+        ofwrite.flags = O_WRITE
         -- get the availible pipe object
+        pipe = fileManager.GetAPipe()
+        if pipe == null
+          fileManager.Close(ofread)
+          fileManager.Close(ofwrite)
+          return -1
+        endIf
+        -- assign open files to the pipe
+        ofread.pipePtr = pipe
+        ofwrite.pipePtr = pipe
+        -- open the pipe
+        status = pipe.Open()
+        -- insert the open files into the fd table
+        currProc.fileDescriptor[fd1] = ofread
+        currProc.fileDescriptor[fd2] = ofwrite
         -- create the array to return
+        newFdArray[0] = fd1
+        newFdArray[1] = fd2
         -- copy it to the user space
-        return -1
+        junk = currProc.addrSpace.CopyBytesToVirtual(fdArray asInteger, (&newFdArray) asInteger, 12)
+        return 0
         endMethod
 
       ----------  FileManager . GetAPipe  ----------
 
       method GetAPipe () returns ptr to Pipe
         var
-          open1, open2 : ptr to OpenFile
+          pipe : ptr to Pipe
         -- get lock
         fileManagerLock.Lock()
         if pipeList.IsEmpty()
           currProc.error = E_No_Resource
+          fileManagerLock.Unlock()
           return null
         endIf
+        pipe = pipeList.Remove()
         -- release lock
         fileManagerLock.Unlock()
-        return null
+        return pipe
         endMethod
 
       ----------  FileManager . PutAPipe  ----------
 
       method PutAPipe (pipePtr: ptr to Pipe)
-           -- NOT IMPLEMENTED
+          fileManagerLock.Lock()
+          pipeList.AddToEnd(pipePtr)
+          fileManagerLock.Unlock()
         endMethod
 
     endBehavior
@@ -4957,10 +5005,12 @@ code Kernel
         -- increment the input index
         putBufferNextIn = (putBufferNextIn + 1) % SERIAL_PUT_BUFFER_SIZE
         putBufferSize = putBufferSize + 1
-        -- release lock
-        serialLock.Unlock()
         -- up on the used semaphore
         putBufferUsedSem.Up()
+        -- release lock
+        serialLock.Unlock()
+        -- signal there are chars to put
+        serialNeedsAttention.Up()
       endMethod
 
     ------------------- SerialDriver.GetChar -----------------
@@ -4984,10 +5034,10 @@ code Kernel
         retVal = getBuffer[getBufferNextOut]
         getBufferNextOut = (getBufferNextOut + 1) % SERIAL_GET_BUFFER_SIZE
         getBufferSize = getBufferSize - 1
-        -- release lock
-        serialLock.Unlock()
         -- up on the free semaphore
         getBufferFreeSem.Up()
+        -- release lock
+        serialLock.Unlock()
         return retVal
       endMethod
 
@@ -5003,12 +5053,14 @@ code Kernel
         if (*serial_status_word_address & SERIAL_CHARACTER_AVAILABLE_BIT) != 0
           -- print("***** detected char to read\n")
           -- aquire lock
-          serialLock.Lock()
+          -- serialLock.Lock()
           -- check if there is space in the buffer
           if getBufferSize < SERIAL_GET_BUFFER_SIZE
             -- PRODUCER
             -- down on the free semaphore
             getBufferFreeSem.Down()
+            -- aquire lock
+            serialLock.Lock()
             -- put the charachter
             i = (*serial_data_word_address)
             i = i << 24
@@ -5018,21 +5070,25 @@ code Kernel
             getBufferSize = getBufferSize + 1
             -- up on the used semaphore
             getBufferUsedSem.Up()
+            -- release lock
+            serialLock.Unlock()
           else
             print("***** Read buffer overflow. *****\n")
           endIf
           -- release lock
-          serialLock.Unlock()
+          -- serialLock.Unlock()
         endIf
         -- check if we can write
         if (*serial_status_word_address & SERIAL_OUTPUT_READY_BIT) != 0
           -- aquire lock
-          serialLock.Lock()
+          -- serialLock.Lock()
           -- check if there are characters in the buffer
           if putBufferSize > 0
             -- CONSUMER
             -- down on the used semaphore
             putBufferUsedSem.Down()
+            -- aquire lock
+            serialLock.Lock()
             -- write the character
             *serial_data_word_address = putBuffer[putBufferNextOut]
             -- increment the index and decrement the size
@@ -5040,9 +5096,11 @@ code Kernel
             putBufferSize = putBufferSize - 1
             -- up on the free semaphore
             putBufferFreeSem.Up()
+            -- release the lock
+            serialLock.Unlock()
           endIf
           -- release lock
-          serialLock.Unlock()
+          -- serialLock.Unlock()
         endIf
       endWhile
       endMethod
@@ -5064,7 +5122,14 @@ code Kernel
 
     -------------------  Pipe . Init  -----------------
     method Init ()
- 	-- NOT IMPLEMENTED
+        pipeMutex = new Mutex
+        pipeMutex.Init()
+        readQueue = new Condition
+        readQueue.Init()
+        writeQueue = new Condition
+        writeQueue.Init()
+        writer = new Condition
+        writer.Init()
       endMethod
 
     -------------------  Pipe . Print  -----------------
@@ -5074,26 +5139,91 @@ code Kernel
 
     -------------------  Pipe . Open  -----------------
     method Open () returns bool
-        -- NOT IMPLEMENTED
+        -- get a frame from the frame manager (bufferFrame)
+        bufferFrame = frameManager.GetAFrame()
+        -- set head and tail to 0
+        head = 0
+        tail = 0
+        -- set numberOfUsers to 2
+        numberOfUsers = 2
+        -- set charsInPipe to 0
+        charsInPipe = 0
         return false
       endMethod
 
     -------------------  Pipe . Read  -----------------
     method Read (buffer: ptr to char, sizeInBytes: int) returns int
-        -- NOT IMPLEMENTED
-	return -1
+        var
+          bytesRead : int = 0
+          junk : int
+        pipeMutex.Lock()
+        while charsInPipe == 0 && numberOfUsers > 1
+          readQueue.Wait(&pipeMutex)
+        endWhile
+        while charsInPipe > 0
+          if bytesRead == sizeInBytes
+            -- signal the write queue now that there is space
+            writeQueue.Signal(&pipeMutex)
+            -- signal the read queue because there is still data in the buffer
+            readQueue.Signal(&pipeMutex)
+            pipeMutex.Unlock()
+	    return bytesRead
+          endIf
+          -- copy one byte into the virtual address space
+          junk = currProc.addrSpace.CopyBytesToVirtual((buffer asInteger) + bytesRead, bufferFrame + head, 1)
+          head = (head + 1) % PAGE_SIZE
+          bytesRead = bytesRead + 1
+          charsInPipe = charsInPipe - 1
+        endWhile
+        -- only signal the writers because there is nothing to read
+        writeQueue.Signal(&pipeMutex)
+        pipeMutex.Unlock()
+	return bytesRead
       endMethod
 
     -------------------  Pipe . Write  -----------------
     method Write (buffer: ptr to char, sizeInBytes: int) returns int
-        -- NOT IMPLEMENTED
-	return -1
+        var
+          bytesWritten : int = 0
+          junk : int
+        pipeMutex.Lock()
+        while charsInPipe == PAGE_SIZE
+          writeQueue.Wait(&pipeMutex)
+        endWhile
+        while bytesWritten < sizeInBytes
+          if charsInPipe >= PAGE_SIZE
+            -- signal the read queue now that there is space
+            readQueue.Signal(&pipeMutex)
+            -- wait for the next reader to compleate
+            while charsInPipe >= PAGE_SIZE
+              writeQueue.Wait(&pipeMutex)
+            endWhile
+          endIf
+          -- copy one byte into the pipe
+          junk = currProc.addrSpace.CopyBytesFromVirtual(bufferFrame + tail, (buffer asInteger) + bytesWritten, 1)
+          tail = (tail + 1) % PAGE_SIZE
+          bytesWritten = bytesWritten + 1
+          charsInPipe = charsInPipe + 1
+        endWhile
+        -- signal the readers because there is something to read
+        readQueue.Signal(&pipeMutex)
+        -- also signal the writers now that we're complete
+        writeQueue.Signal(&pipeMutex)
+        pipeMutex.Unlock()
+	return 0
       endMethod
 
     -------------------  Pipe . Close  -----------------
     ---- Assumes fileManagerLock is locked.
     method Close ()
-        -- NOT IMPLEMENTED
+        if numberOfUsers > 1
+          numberOfUsers = numberOfUsers - 1
+          -- signal all waiting threads
+        else
+          numberOfUsers = numberOfUsers - 1
+          -- return the frame and set it to -1
+          frameManager.PutAFrame(bufferFrame)
+        endIf
       endMethod
 
   endBehavior
